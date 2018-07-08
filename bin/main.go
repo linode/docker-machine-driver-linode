@@ -1,8 +1,8 @@
 package main
 
 import (
+	linode "github.com/displague/docker-machine-linode"
 	"github.com/docker/machine/libmachine/drivers/plugin"
-	linode "github.com/taoh/docker-machine-linode"
 )
 
 func main() {

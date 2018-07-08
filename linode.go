@@ -4,41 +4,58 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"time"
+	"net"
+	"strings"
 
+	"github.com/chiefy/linodego"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/taoh/linodego"
 )
+
+const Version = "0.0.1"
 
 // Driver is the implementation of BaseDriver interface
 type Driver struct {
 	*drivers.BaseDriver
 	client *linodego.Client
 
-	APIKey     string
+	APIToken   string
 	IPAddress  string
 	DockerPort int
 
-	LinodeId    int
-	LinodeLabel string
+	InstanceID    int
+	InstanceLabel string
 
-	DataCenterId   int
-	PlanId         int
-	PaymentTerm    int
+	Region         string
+	InstanceType   string
 	RootPassword   string
 	SSHPort        int
-	DistributionId int
-	KernelId       int
+	InstanceImage  string
+	InstanceKernel string
+	SwapSize       int
 }
+
+const (
+	defaultSSHPort        = 22
+	defaultSSHUser        = "root"
+	defaultInstanceImage  = "linode/ubuntu18.04"
+	defaultRegion         = "us-east"
+	defaultInstanceType   = "g6-standard-4"
+	defaultInstanceKernel = "linode/grub2"
+	defaultSwapSize       = 512
+	defaultDockerPort     = 2376
+)
 
 // NewDriver
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
+		InstanceImage: defaultInstanceImage,
+		InstanceType:  defaultInstanceType,
+		Region:        defaultRegion,
+		SwapSize:      defaultSwapSize,
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
 			StorePath:   storePath,
@@ -49,7 +66,10 @@ func NewDriver(hostName, storePath string) *Driver {
 // Get Linode Client
 func (d *Driver) getClient() *linodego.Client {
 	if d.client == nil {
-		d.client = linodego.NewClient(d.APIKey, nil)
+		client := linodego.NewClient(&d.APIToken, nil)
+		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s v%s https://github.com/displague/docker-machine-linode", d.DriverName(), Version))
+		client.SetDebug(true)
+		d.client = &client
 	}
 	return d.client
 }
@@ -74,88 +94,90 @@ func (d *Driver) GetIP() (string, error) {
 func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{
 		mcnflag.StringFlag{
-			Name:   "linode-api-key",
-			Usage:  "Linode API Key",
+			EnvVar: "LINODE_TOKEN",
+			Name:   "linode-token",
+			Usage:  "Linode API Token",
 			Value:  "",
-			EnvVar: "LINODE_API_KEY",
 		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_ROOT_PASSWORD",
 			Name:   "linode-root-pass",
-			Usage:  "Root password",
+			Usage:  "Root Password",
 		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_LABEL",
 			Name:   "linode-label",
-			Usage:  "Linode label",
+			Usage:  "Linode Instance Label",
 		},
-		mcnflag.IntFlag{
-			EnvVar: "LINODE_DATACENTER_ID",
-			Name:   "linode-datacenter-id",
-			Usage:  "Linode Data Center Id",
-			Value:  2,
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_REGION",
+			Name:   "linode-region",
+			Usage:  "Linode Region",
+			Value:  defaultRegion, // "us-central", "ap-south", "eu-central", ...
 		},
-		mcnflag.IntFlag{
-			EnvVar: "LINODE_PLAN_ID",
-			Name:   "linode-plan-id",
-			Usage:  "Linode plan id",
-			Value:  1,
-		},
-		mcnflag.IntFlag{
-			EnvVar: "LINODE_PAYMENT_TERM",
-			Name:   "linode-payment-term",
-			Usage:  "Linode Payment term",
-			Value:  1, // valid values: 1, 12, 24
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_INSTANCE_TYPE",
+			Name:   "linode-type",
+			Usage:  "Linode Instance Type",
+			Value:  defaultInstanceType, // "g6-nanode-1", g6-highmem-2, ...
 		},
 		mcnflag.IntFlag{
 			EnvVar: "LINODE_SSH_PORT",
 			Name:   "linode-ssh-port",
-			Usage:  "Linode SSH Port",
-			Value:  22,
+			Usage:  "Linode Instance SSH Port",
+			Value:  defaultSSHPort,
 		},
-		mcnflag.IntFlag{
-			EnvVar: "LINODE_DISTRIBUTION_ID",
-			Name:   "linode-distribution-id",
-			Usage:  "Linode Distribution Id",
-			Value:  140, // Debian 8 (Ubuntu 16.04 LTD = 146)
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_IMAGE",
+			Name:   "linode-image",
+			Usage:  "Linode Instance Image",
+			Value:  defaultInstanceImage, // "linode/ubuntu18.04", "linode/arch", ...
 		},
-		mcnflag.IntFlag{
-			EnvVar: "LINODE_KERNEL_ID",
-			Name:   "linode-kernel-id",
-			Usage:  "Linode Kernel Id",
-			Value:  210, // default kernel, GRUB 2,
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_KERNEL",
+			Name:   "linode-kernel",
+			Usage:  "Linode Instance Kernel",
+			Value:  defaultInstanceKernel, // linode/latest-64bit, ..
 		},
 		mcnflag.IntFlag{
 			EnvVar: "LINODE_DOCKER_PORT",
 			Name:   "linode-docker-port",
 			Usage:  "Docker Port",
-			Value:  2376,
+			Value:  defaultDockerPort,
+		},
+		mcnflag.IntFlag{
+			EnvVar: "LINODE_SWAP_SIZE",
+			Name:   "linode-swap-size",
+			Usage:  "Linode Instance Swap Size (MB)",
+			Value:  defaultSwapSize,
 		},
 	}
 }
 
 func (d *Driver) GetSSHUsername() string {
 	if d.SSHUser == "" {
-		d.SSHUser = "root"
+		d.SSHUser = defaultSSHUser
 	}
 
 	return d.SSHUser
 }
 
 func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
-	d.APIKey = flags.String("linode-api-key")
-	d.DataCenterId = flags.Int("linode-datacenter-id")
-	d.PlanId = flags.Int("linode-plan-id")
-	d.PaymentTerm = flags.Int("linode-payment-term")
+	d.APIToken = flags.String("linode-token")
+	d.Region = flags.String("linode-region")
+	d.InstanceType = flags.String("linode-type")
 	d.RootPassword = flags.String("linode-root-pass")
 	d.SSHPort = flags.Int("linode-ssh-port")
-	d.DistributionId = flags.Int("linode-distribution-id")
-	d.KernelId = flags.Int("linode-kernel-id")
-	d.LinodeLabel = flags.String("linode-label")
+	d.InstanceImage = flags.String("linode-image")
+	d.InstanceKernel = flags.String("linode-kernel")
+	d.InstanceLabel = flags.String("linode-label")
+	d.SwapSize = flags.Int("linode-swap-size")
 	d.DockerPort = flags.Int("linode-docker-port")
 
-	if d.APIKey == "" {
-		return fmt.Errorf("linode driver requires the --linode-api-key option")
+	d.SetSwarmConfigFromFlags(flags)
+
+	if d.APIToken == "" {
+		return fmt.Errorf("linode driver requires the --linode-token option")
 	}
 
 	if d.RootPassword == "" {
@@ -170,7 +192,7 @@ func (d *Driver) PreCreateCheck() error {
 }
 
 func (d *Driver) Create() error {
-	log.Debug("Creating Linode machine instance...")
+	log.Info("Creating Linode machine instance...")
 
 	publicKey, err := d.createSSHKey()
 	if err != nil {
@@ -180,117 +202,47 @@ func (d *Driver) Create() error {
 	client := d.getClient()
 
 	// Create a linode
-	log.Debug("Creating linode instance")
-	linodeResponse, err := client.Linode.Create(
-		d.DataCenterId,
-		d.PlanId,
-		d.PaymentTerm,
-	)
+	log.Info("Creating linode instance")
+	createOpts := linodego.InstanceCreateOptions{
+		Region:         d.Region,
+		Type:           d.InstanceType,
+		Label:          d.InstanceLabel,
+		RootPass:       d.RootPassword,
+		AuthorizedKeys: []string{strings.TrimSpace(publicKey)},
+		Image:          d.InstanceImage,
+		SwapSize:       &d.SwapSize,
+	}
+
+	linode, err := client.CreateInstance(&createOpts)
 	if err != nil {
 		return err
 	}
 
-	d.LinodeId = linodeResponse.LinodeId.LinodeId
-	log.Debugf("Linode created: %d", d.LinodeId)
+	d.InstanceID = linode.ID
+	d.InstanceLabel = linode.Label
 
-	if d.LinodeLabel != "" {
-		log.Debugf("Updating linode label to %s", d.LinodeLabel)
-		_, err := client.Linode.Update(d.LinodeId, map[string]interface{}{"Label": d.LinodeLabel})
-		if err != nil {
-			return err
-		}
-	}
-
-	linodeIPListResponse, err := client.Ip.List(d.LinodeId, -1)
-	if err != nil {
-		return err
-	}
-	for _, fullIpAddress := range linodeIPListResponse.FullIPAddresses {
-		if fullIpAddress.IsPublic == 1 {
-			d.IPAddress = fullIpAddress.IPAddress
+	for _, address := range linode.IPv4 {
+		if private := privateIP(*address); !private {
+			d.IPAddress = address.String()
+			break
 		}
 	}
 
 	if d.IPAddress == "" {
-		return errors.New("Linode IP Address is not found.")
+		return errors.New("Linode IP Address is not found")
 	}
 
-	log.Debugf("Created linode ID %d, IP address %s",
-		d.LinodeId,
+	log.Debugf("Created Linode Instance %s (%d), IP address %s",
+		d.InstanceLabel,
+		d.InstanceID,
 		d.IPAddress)
 
-	// Deploy distribution
-	args := make(map[string]string)
-	args["rootPass"] = d.RootPassword
-	args["rootSSHKey"] = publicKey
-	distributionId := d.DistributionId
-
-	log.Debug("Create disk")
-	createDiskJobResponse, err := d.client.Disk.CreateFromDistribution(distributionId, d.LinodeId, "Primary Disk", 20480-256, args)
-
 	if err != nil {
 		return err
 	}
 
-	jobId := createDiskJobResponse.DiskJob.JobId
-	diskId := createDiskJobResponse.DiskJob.DiskId
-	log.Debugf("Linode create disk task :%d.", jobId)
-
-	// wait until the creation is finished
-	err = d.waitForJob(jobId, "Create Disk Task", 60)
-	if err != nil {
-		return err
-	}
-
-	// create swap
-	log.Debug("Create swap disk")
-	createDiskJobResponse, err = d.client.Disk.Create(d.LinodeId, "swap", "Swap Disk", 256, nil)
-	if err != nil {
-		return err
-	}
-
-	jobId = createDiskJobResponse.DiskJob.JobId
-	swapDiskId := createDiskJobResponse.DiskJob.DiskId
-	log.Debugf("Linode create swap disk task :%d.", jobId)
-
-	// wait until the creation is finished
-	err = d.waitForJob(jobId, "Create Swap Disk Task", 60)
-	if err != nil {
-		return err
-	}
-
-	// create config
-	log.Debug("Create configuration")
-	args2 := make(map[string]string)
-	args2["DiskList"] = fmt.Sprintf("%d,%d", diskId, swapDiskId)
-	args2["RootDeviceNum"] = "1"
-	args2["RootDeviceRO"] = "true"
-	args2["helper_distro"] = "true"
-	kernelId := d.KernelId
-	_, err = d.client.Config.Create(d.LinodeId, kernelId, "My Docker Machine Configuration", args2)
-
-	if err != nil {
-		return err
-	}
-
-	log.Debugf("Linode configuration created.")
-
-	// Boot
-	log.Debug("Booting")
-	jobResponse, err := d.client.Linode.Boot(d.LinodeId, -1)
-	if err != nil {
-		return err
-	}
-	jobId = jobResponse.JobId.JobId
-	log.Debugf("Booting linode, job id: %v", jobId)
-	// wait for boot
-	err = d.waitForJob(jobId, "Booting linode", 60)
-	if err != nil {
-		return err
-	}
-
-	log.Debug("Waiting for Machine Running...")
-	if err := mcnutils.WaitForSpecific(drivers.MachineInState(d, state.Running), 120, 3*time.Second); err != nil {
+	log.Info("Waiting for Machine Running...")
+	if err := linodego.WaitForInstanceStatus(client, d.InstanceID, linodego.InstanceRunning, 180); err != nil {
 		return fmt.Errorf("wait for machine running failed: %s", err)
 	}
 
@@ -310,49 +262,54 @@ func (d *Driver) GetURL() (string, error) {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	linodes, err := d.getClient().Linode.List(d.LinodeId)
+	linode, err := d.getClient().GetInstance(d.InstanceID)
 	if err != nil {
 		return state.Error, err
 	}
 
-	// Status flag values:
-	// -2: Boot Failed
-	// -1: Being Created
-	//  0: Brand New
-	//  1: Running
-	//  2: Powered Off
-	//  3: Shutting Down
-	//  4: Saved to Disk
-	//
-	switch linodes.Linodes[0].Status {
-	case -1, 0:
-		return state.Starting, nil
-	case 1:
+	switch linode.Status {
+	case linodego.InstanceRunning:
 		return state.Running, nil
-	case -2, 2, 4:
+	case linodego.InstanceOffline,
+		linodego.InstanceRebuilding,
+		linodego.InstanceMigrating:
 		return state.Stopped, nil
-	case 3:
+	case linodego.InstanceShuttingDown, linodego.InstanceDeleting:
 		return state.Stopping, nil
+	case linodego.InstanceProvisioning,
+		linodego.InstanceRebooting,
+		linodego.InstanceBooting,
+		linodego.InstanceCloning,
+		linodego.InstanceRestoring:
+		return state.Starting, nil
+
 	}
+
+	// deleting, migrating, rebuilding, cloning, restoring ...
 	return state.None, nil
 }
 
 func (d *Driver) Start() error {
 	log.Debug("Start...")
-	_, err := d.getClient().Linode.Boot(d.LinodeId, -1)
+	_, err := d.getClient().BootInstance(d.InstanceID, 0)
 	return err
 }
 
 func (d *Driver) Stop() error {
 	log.Debug("Stop...")
-	_, err := d.getClient().Linode.Shutdown(d.LinodeId)
+	_, err := d.getClient().ShutdownInstance(d.InstanceID)
 	return err
 }
 
 func (d *Driver) Remove() error {
 	client := d.getClient()
-	log.Debugf("Removing linode: %d", d.LinodeId)
-	if _, err := client.Linode.Delete(d.LinodeId, true); err != nil {
+	log.Infof("Removing linode: %d", d.InstanceID)
+	if err := client.DeleteInstance(d.InstanceID); err != nil {
+		if apiErr, ok := err.(linodego.Error); ok && apiErr.Code == 404 {
+			log.Debug("Linode was already removed")
+			return nil
+		}
+
 		return err
 	}
 	return nil
@@ -360,13 +317,13 @@ func (d *Driver) Remove() error {
 
 func (d *Driver) Restart() error {
 	log.Debug("Restarting...")
-	_, err := d.getClient().Linode.Reboot(d.LinodeId, -1)
+	_, err := d.getClient().RebootInstance(d.InstanceID)
 	return err
 }
 
 func (d *Driver) Kill() error {
 	log.Debug("Killing...")
-	_, err := d.getClient().Linode.Shutdown(d.LinodeId)
+	_, err := d.getClient().ShutdownInstance(d.InstanceID)
 	return err
 }
 
@@ -383,37 +340,18 @@ func (d *Driver) createSSHKey() (string, error) {
 	return string(publicKey), nil
 }
 
-// waitForJob checks job status every 1 second until timeout
-func (d *Driver) waitForJob(jobId int, jobName string, timeOutSeconds int) error {
-	log.Debugf("Wait for job %s completion...", jobName)
-	timeout := time.After(time.Duration(timeOutSeconds) * time.Second)
-	tick := time.Tick(1000 * time.Millisecond)
-	for {
-		select {
-		case <-timeout:
-			return fmt.Errorf("Job %s timed out after %d seconds.", jobName, timeOutSeconds)
-		case <-tick:
-			{
-				clientJobResponse, err := d.getClient().Job.List(d.LinodeId, jobId, false)
-				if err != nil {
-					return err
-				}
-
-				if len(clientJobResponse.Jobs) < 0 || clientJobResponse.Jobs[0].JobId != jobId {
-					return fmt.Errorf("Job %s is not found.", jobName)
-				}
-
-				if clientJobResponse.Jobs[0].HostSuccess.String() == "1" {
-					log.Debugf("Linode job %s completed.", jobName)
-					return nil
-				}
-				// if not success, wait for next check
-			}
-		}
-	}
-}
-
 // publicSSHKeyPath is always SSH Key Path appended with ".pub"
 func (d *Driver) publicSSHKeyPath() string {
 	return d.GetSSHKeyPath() + ".pub"
+}
+
+// privateIP determines if an IP is for private use (RFC1918)
+// https://stackoverflow.com/a/41273687
+func privateIP(ip net.IP) bool {
+	private := false
+	_, private24BitBlock, _ := net.ParseCIDR("10.0.0.0/8")
+	_, private20BitBlock, _ := net.ParseCIDR("172.16.0.0/12")
+	_, private16BitBlock, _ := net.ParseCIDR("192.168.0.0/16")
+	private = private24BitBlock.Contains(ip) || private20BitBlock.Contains(ip) || private16BitBlock.Contains(ip)
+	return private
 }

@@ -4,8 +4,8 @@ Linode Driver Plugin for docker-machine. **Requires docker-machine version > v.0
 
 ## Install
 
-First, docker-machine v0.5.0 rc2 is required, documentation for how to install `docker-machine`
-[is available here](https://github.com/docker/machine/releases/tag/v0.5.0-rc2#Installation).
+First, docker-machine is required, documentation for how to install `docker-machine`
+[is available here](https://docs.docker.com/machine/install-machine/).
 
 or you can install `docker-machine` from source code by running these commands
 

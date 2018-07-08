@@ -1,13 +1,13 @@
 # docker-machine-linode
 
-Linode Driver Plugin for docker-machine. **Requires docker-machine version > v.0.5.0-rc1**
+Linode Driver Plugin for docker-machine.
 
 ## Install
 
 First, docker-machine is required, documentation for how to install `docker-machine`
 [is available here](https://docs.docker.com/machine/install-machine/).
 
-or you can install `docker-machine` from source code by running these commands
+Or, you can install `docker-machine` from source by running:
 
 ```bash
 go get github.com/docker/machine
@@ -20,7 +20,6 @@ Then, install `docker-machine-linode` driver in the $GOPATH and add $GOPATH/bin 
 ```bash
 go get github.com/displague/docker-machine-linode
 cd $GOPATH/src/github.com/displague/docker-machine-linode
-make
 make install
 ```
 
@@ -41,6 +40,19 @@ LINODE_ROOT_PASSWORD=$(openssl rand -base64 32); echo Password for root: $LINODE
 docker-machine create -d linode --linode-token=$LINODE_TOKEN --linode-root-pass=$LINODE_ROOT_PASSWORD linode
 eval $(docker-machine env default)
 docker run --rm --it debian bash
+```
+
+```bash
+$ docker-machine ls
+NAME      ACTIVE   DRIVER   STATE     URL                        SWARM   DOCKER        ERRORS
+linode    *        linode   Running   tcp://45.79.139.196:2376           v18.05.0-ce
+
+$ docker-machine rm linode
+About to remove linode
+WARNING: This action will delete both local reference and remote instance.
+Are you sure? (y/n): y
+(default) Removing linode: 8753395
+Successfully removed default
 ```
 
 ### Options

@@ -41,7 +41,7 @@ type Driver struct {
 const (
 	defaultSSHPort        = 22
 	defaultSSHUser        = "root"
-	defaultInstanceImage  = "linode/debian9"
+	defaultInstanceImage  = "linode/ubuntu18.04"
 	defaultRegion         = "us-east"
 	defaultInstanceType   = "g6-standard-4"
 	defaultInstanceKernel = "linode/grub2"

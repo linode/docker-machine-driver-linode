@@ -15,7 +15,7 @@ cd $GOPATH/src/github.com/docker/machine
 make build
 ```
 
-Then, install `docker-machine-linode` driver in the $GOPATH and add $GOPATH/bin to the $PATH env.
+Then, install `docker-machine-linode` driver in the `$GOPATH` and add `$GOPATH/bin` to the `$PATH` environment variable.
 
 ```bash
 go get github.com/displague/docker-machine-linode
@@ -38,7 +38,7 @@ LINODE_TOKEN=e332cf8e1a78427f1368a5a0a67946ad1e7c8e28e332cf8e1a78427f1368a5a0 # 
 LINODE_ROOT_PASSWORD=$(openssl rand -base64 32); echo Password for root: $LINODE_ROOT_PASSWORD
 
 docker-machine create -d linode --linode-token=$LINODE_TOKEN --linode-root-pass=$LINODE_ROOT_PASSWORD linode
-eval $(docker-machine env default)
+eval $(docker-machine env linode)
 docker run --rm --it debian bash
 ```
 
@@ -52,7 +52,7 @@ About to remove linode
 WARNING: This action will delete both local reference and remote instance.
 Are you sure? (y/n): y
 (default) Removing linode: 8753395
-Successfully removed default
+Successfully removed linode
 ```
 
 ### Options
@@ -69,3 +69,12 @@ Successfully removed default
 | `linode-ssh-port` | `LINODE_SSH_PORT` | `22` | The port that SSH is running on, needed for Docker Machine to provision the Linode.
 | `linode-docker-port` | `LINODE_DOCKER_PORT` | `2376` | The TCP port of the Linode that Docker will be listening on
 | `linode-swap-size` | `LINODE_SWAP_SIZE` | `512` | The amount of swap space provisioned on the Linode Instance
+
+
+## Discussion / Help
+
+Join us at [#linodego](https://gophers.slack.com/messages/CAG93EB2S) on the [gophers slack](https://gophers.slack.com)
+
+## License
+
+[MIT License](LICENSE)

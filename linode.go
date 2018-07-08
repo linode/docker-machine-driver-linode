@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"strings"
 
 	"github.com/chiefy/linodego"
 	"github.com/docker/machine/libmachine/drivers"
@@ -13,6 +14,8 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 )
+
+const Version = "0.0.1"
 
 // Driver is the implementation of BaseDriver interface
 type Driver struct {
@@ -35,9 +38,24 @@ type Driver struct {
 	SwapSize       int
 }
 
+const (
+	defaultSSHPort        = 22
+	defaultSSHUser        = "root"
+	defaultInstanceImage  = "linode/debian9"
+	defaultRegion         = "us-east"
+	defaultInstanceType   = "g6-standard-4"
+	defaultInstanceKernel = "linode/grub2"
+	defaultSwapSize       = 512
+	defaultDockerPort     = 2376
+)
+
 // NewDriver
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
+		InstanceImage: defaultInstanceImage,
+		InstanceType:  defaultInstanceType,
+		Region:        defaultRegion,
+		SwapSize:      defaultSwapSize,
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
 			StorePath:   storePath,
@@ -49,6 +67,8 @@ func NewDriver(hostName, storePath string) *Driver {
 func (d *Driver) getClient() *linodego.Client {
 	if d.client == nil {
 		client := linodego.NewClient(&d.APIToken, nil)
+		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s v%s https://github.com/displague/docker-machine-linode", d.DriverName(), Version))
+		client.SetDebug(true)
 		d.client = &client
 	}
 	return d.client
@@ -75,7 +95,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_TOKEN",
-			Name:   "linode-api-token",
+			Name:   "linode-token",
 			Usage:  "Linode API Token",
 			Value:  "",
 		},
@@ -93,50 +113,50 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			EnvVar: "LINODE_REGION",
 			Name:   "linode-region",
 			Usage:  "Linode Region",
-			Value:  "us-east", // "us-central", "ap-south", "eu-central", ...
+			Value:  defaultRegion, // "us-central", "ap-south", "eu-central", ...
 		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_INSTANCE_TYPE",
 			Name:   "linode-type",
 			Usage:  "Linode Instance Type",
-			Value:  "g6-standard-4", // "g6-nanode-1", g6-highmem-2, ...
+			Value:  defaultInstanceType, // "g6-nanode-1", g6-highmem-2, ...
 		},
 		mcnflag.IntFlag{
 			EnvVar: "LINODE_SSH_PORT",
 			Name:   "linode-ssh-port",
 			Usage:  "Linode Instance SSH Port",
-			Value:  22,
+			Value:  defaultSSHPort,
 		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_IMAGE",
 			Name:   "linode-image",
 			Usage:  "Linode Instance Image",
-			Value:  "linode/debian8", // "linode/ubuntu18.04", "linode/arch", ...
+			Value:  defaultInstanceImage, // "linode/ubuntu18.04", "linode/arch", ...
 		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_KERNEL",
 			Name:   "linode-kernel",
 			Usage:  "Linode Instance Kernel",
-			Value:  "linode/grub2", // linode/latest-64bit, ..
+			Value:  defaultInstanceKernel, // linode/latest-64bit, ..
 		},
 		mcnflag.IntFlag{
 			EnvVar: "LINODE_DOCKER_PORT",
 			Name:   "linode-docker-port",
 			Usage:  "Docker Port",
-			Value:  2376,
+			Value:  defaultDockerPort,
 		},
 		mcnflag.IntFlag{
 			EnvVar: "LINODE_SWAP_SIZE",
 			Name:   "linode-swap-size",
 			Usage:  "Linode Instance Swap Size (MB)",
-			Value:  512,
+			Value:  defaultSwapSize,
 		},
 	}
 }
 
 func (d *Driver) GetSSHUsername() string {
 	if d.SSHUser == "" {
-		d.SSHUser = "root"
+		d.SSHUser = defaultSSHUser
 	}
 
 	return d.SSHUser
@@ -154,6 +174,8 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.SwapSize = flags.Int("linode-swap-size")
 	d.DockerPort = flags.Int("linode-docker-port")
 
+	d.SetSwarmConfigFromFlags(flags)
+
 	if d.APIToken == "" {
 		return fmt.Errorf("linode driver requires the --linode-token option")
 	}
@@ -170,7 +192,7 @@ func (d *Driver) PreCreateCheck() error {
 }
 
 func (d *Driver) Create() error {
-	log.Debug("Creating Linode machine instance...")
+	log.Info("Creating Linode machine instance...")
 
 	publicKey, err := d.createSSHKey()
 	if err != nil {
@@ -180,13 +202,13 @@ func (d *Driver) Create() error {
 	client := d.getClient()
 
 	// Create a linode
-	log.Debug("Creating linode instance")
+	log.Info("Creating linode instance")
 	createOpts := linodego.InstanceCreateOptions{
 		Region:         d.Region,
 		Type:           d.InstanceType,
 		Label:          d.InstanceLabel,
 		RootPass:       d.RootPassword,
-		AuthorizedKeys: []string{publicKey},
+		AuthorizedKeys: []string{strings.TrimSpace(publicKey)},
 		Image:          d.InstanceImage,
 		SwapSize:       &d.SwapSize,
 	}
@@ -195,6 +217,9 @@ func (d *Driver) Create() error {
 	if err != nil {
 		return err
 	}
+
+	d.InstanceID = linode.ID
+	d.InstanceLabel = linode.Label
 
 	for _, address := range linode.IPv4 {
 		if private := privateIP(*address); !private {
@@ -207,7 +232,8 @@ func (d *Driver) Create() error {
 		return errors.New("Linode IP Address is not found")
 	}
 
-	log.Debugf("Created Linode Instance ID %d, IP address %s",
+	log.Debugf("Created Linode Instance %s (%d), IP address %s",
+		d.InstanceLabel,
 		d.InstanceID,
 		d.IPAddress)
 
@@ -215,8 +241,8 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Debug("Waiting for Machine Running...")
-	if err := linodego.WaitForInstanceStatus(client, d.InstanceID, linodego.InstanceRunning, 120); err != nil {
+	log.Info("Waiting for Machine Running...")
+	if err := linodego.WaitForInstanceStatus(client, d.InstanceID, linodego.InstanceRunning, 180); err != nil {
 		return fmt.Errorf("wait for machine running failed: %s", err)
 	}
 
@@ -277,8 +303,13 @@ func (d *Driver) Stop() error {
 
 func (d *Driver) Remove() error {
 	client := d.getClient()
-	log.Debugf("Removing linode: %d", d.InstanceID)
+	log.Infof("Removing linode: %d", d.InstanceID)
 	if err := client.DeleteInstance(d.InstanceID); err != nil {
+		if apiErr, ok := err.(linodego.Error); ok && apiErr.Code == 404 {
+			log.Debug("Linode was already removed")
+			return nil
+		}
+
 		return err
 	}
 	return nil

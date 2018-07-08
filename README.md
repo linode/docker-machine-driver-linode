@@ -47,13 +47,13 @@ docker run --rm --it debian bash
 
 | Argument | Env | Default | Description
 | --- | --- | --- | ---
-| `linode-token` | `LINODE_TOKEN` | None | **required** Linode APIv4 Token (see <https://developers.linode.com/api/v4#section/Personal-Access-Token>)
+| `linode-token` | `LINODE_TOKEN` | None | **required** Linode APIv4 Token (see [here](https://developers.linode.com/api/v4#section/Personal-Access-Token))
 | `linode-root-pass` | `LINODE_ROOT_PASSWORD` | None | **required** The Linode Instance `root_pass` (password assigned to the `root` account)
 | `linode-label` | `LINODE_LABEL` | *generated* | The Linode Instance `label`.  This `label` must be unique on the account.
-| `linode-region` | `LINODE_REGION` | `us-east` | The Linode Instance `region` (see <https://api.linode.com/v4/regions>)
-| `linode-instance-type` | `LINODE_INSTANCE_TYPE` | `g6-standard-4` | The Linode Instance `type` (see <https://api.linode.com/v4/linode/types>)
-| `linode-image` | `LINODE_IMAGE` | `linode/ubuntu18.04` | The Linode Instance `image` which provides the Linux distribution (see <https://api.linode.com/v4/images>).
-| `linode-kernel` | `LINODE_KERNEL` | `linode/grub2` | The Linux Instance `kernel` to boot.  `linode/grub2` will defer to the distribution kernel. (see <https://api.linode.com/v4/linode/kernels> (`?page=N`))
+| `linode-region` | `LINODE_REGION` | `us-east` | The Linode Instance `region` (see [here](https://api.linode.com/v4/regions))
+| `linode-instance-type` | `LINODE_INSTANCE_TYPE` | `g6-standard-4` | The Linode Instance `type` (see [here](https://api.linode.com/v4/linode/types))
+| `linode-image` | `LINODE_IMAGE` | `linode/ubuntu18.04` | The Linode Instance `image` which provides the Linux distribution (see [here](https://api.linode.com/v4/images)).
+| `linode-kernel` | `LINODE_KERNEL` | `linode/grub2` | The Linux Instance `kernel` to boot.  `linode/grub2` will defer to the distribution kernel. (see [here](https://api.linode.com/v4/linode/kernels) (`?page=N`))
 | `linode-ssh-port` | `LINODE_SSH_PORT` | `22` | The port that SSH is running on, needed for Docker Machine to provision the Linode.
 | `linode-docker-port` | `LINODE_DOCKER_PORT` | `2376` | The TCP port of the Linode that Docker will be listening on
 | `linode-swap-size` | `LINODE_SWAP_SIZE` | `512` | The amount of swap space provisioned on the Linode Instance

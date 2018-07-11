@@ -15,8 +15,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 )
 
-const Version = "0.0.1"
-
 // Driver is the implementation of BaseDriver interface
 type Driver struct {
 	*drivers.BaseDriver
@@ -39,6 +37,8 @@ type Driver struct {
 }
 
 const (
+	// VERSION represents the semver version of the package
+	VERSION               = "0.0.2"
 	defaultSSHPort        = 22
 	defaultSSHUser        = "root"
 	defaultInstanceImage  = "linode/ubuntu18.04"
@@ -67,23 +67,26 @@ func NewDriver(hostName, storePath string) *Driver {
 func (d *Driver) getClient() *linodego.Client {
 	if d.client == nil {
 		client := linodego.NewClient(&d.APIToken, nil)
-		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s v%s https://github.com/displague/docker-machine-linode", d.DriverName(), Version))
+		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s/v%s (https://github.com/displague/docker-machine-linode)", d.DriverName(), VERSION))
 		client.SetDebug(true)
 		d.client = &client
 	}
 	return d.client
 }
 
+// DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
 	return "linode"
 }
 
+// GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
 	return d.GetIP()
 }
 
-// Get IP Address for the Linode. Note that currently the IP Address
-// is cached
+// GetIP returns an IP or hostname that this host is available at
+// e.g. 1.2.3.4 or docker-host-d60b70a14d3a.cloudapp.net
+// Note that currently the IP Address is cached
 func (d *Driver) GetIP() (string, error) {
 	if d.IPAddress == "" {
 		return "", fmt.Errorf("IP address is not set")
@@ -91,6 +94,8 @@ func (d *Driver) GetIP() (string, error) {
 	return d.IPAddress, nil
 }
 
+// GetCreateFlags returns the mcnflag.Flag slice representing the flags
+// that can be set, their descriptions and defaults.
 func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{
 		mcnflag.StringFlag{
@@ -112,13 +117,13 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_REGION",
 			Name:   "linode-region",
-			Usage:  "Linode Region",
+			Usage:  "Specifies the region (location) of the Linode instance",
 			Value:  defaultRegion, // "us-central", "ap-south", "eu-central", ...
 		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_INSTANCE_TYPE",
-			Name:   "linode-type",
-			Usage:  "Linode Instance Type",
+			Name:   "linode-instance-type",
+			Usage:  "Specifies the Linode Instance type which determines CPU, memory, disk size, etc.",
 			Value:  defaultInstanceType, // "g6-nanode-1", g6-highmem-2, ...
 		},
 		mcnflag.IntFlag{
@@ -130,7 +135,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_IMAGE",
 			Name:   "linode-image",
-			Usage:  "Linode Instance Image",
+			Usage:  "Specifies the Linode Instance image which determines the OS distribution and base files",
 			Value:  defaultInstanceImage, // "linode/ubuntu18.04", "linode/arch", ...
 		},
 		mcnflag.StringFlag{
@@ -154,6 +159,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 	}
 }
 
+// GetSSHUsername returns username for use with ssh
 func (d *Driver) GetSSHUsername() string {
 	if d.SSHUser == "" {
 		d.SSHUser = defaultSSHUser
@@ -162,10 +168,12 @@ func (d *Driver) GetSSHUsername() string {
 	return d.SSHUser
 }
 
+// SetConfigFromFlags configures the driver with the object that was returned
+// by RegisterCreateFlags
 func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.APIToken = flags.String("linode-token")
 	d.Region = flags.String("linode-region")
-	d.InstanceType = flags.String("linode-type")
+	d.InstanceType = flags.String("linode-instance-type")
 	d.RootPassword = flags.String("linode-root-pass")
 	d.SSHPort = flags.Int("linode-ssh-port")
 	d.InstanceImage = flags.String("linode-image")
@@ -184,13 +192,25 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 		return fmt.Errorf("linode driver requires the --linode-root-pass option")
 	}
 
+	if len(d.InstanceLabel) == 0 {
+		d.InstanceLabel = d.GetMachineName()
+	}
+	if strings.Contains(d.InstanceImage, "linode/containerlinux") {
+		d.SSHUser = "core"
+	}
+
 	return nil
 }
 
 func (d *Driver) PreCreateCheck() error {
+	// TODO linode-stackscript-file should be read and uploaded (private), then used for boot.
+	// RevNote could be sha256 of file so the file can be referenced instead of reuploaded.
+	// linode-stackscript would let the user specify an existing id
+	// linode-stackscript-data would need to be a json input
 	return nil
 }
 
+// Create a host using the driver's config
 func (d *Driver) Create() error {
 	log.Info("Creating Linode machine instance...")
 
@@ -249,6 +269,8 @@ func (d *Driver) Create() error {
 	return nil
 }
 
+// GetURL returns a Docker compatible host URL for connecting to this host
+// e.g. tcp://1.2.3.4:2376
 func (d *Driver) GetURL() (string, error) {
 	ip, err := d.GetIP()
 	if err != nil {
@@ -261,6 +283,7 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:%d", ip, d.DockerPort), nil
 }
 
+// GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	linode, err := d.getClient().GetInstance(d.InstanceID)
 	if err != nil {
@@ -289,18 +312,21 @@ func (d *Driver) GetState() (state.State, error) {
 	return state.None, nil
 }
 
+// Start a host
 func (d *Driver) Start() error {
 	log.Debug("Start...")
 	_, err := d.getClient().BootInstance(d.InstanceID, 0)
 	return err
 }
 
+// Stop a host gracefully
 func (d *Driver) Stop() error {
 	log.Debug("Stop...")
 	_, err := d.getClient().ShutdownInstance(d.InstanceID)
 	return err
 }
 
+// Remove a host
 func (d *Driver) Remove() error {
 	client := d.getClient()
 	log.Infof("Removing linode: %d", d.InstanceID)
@@ -315,12 +341,15 @@ func (d *Driver) Remove() error {
 	return nil
 }
 
+// Restart a host. This may just call Stop(); Start() if the provider does not
+// have any special restart behaviour.
 func (d *Driver) Restart() error {
 	log.Debug("Restarting...")
-	_, err := d.getClient().RebootInstance(d.InstanceID)
+	_, err := d.getClient().RebootInstance(d.InstanceID, 0)
 	return err
 }
 
+// Kill stops a host forcefully
 func (d *Driver) Kill() error {
 	log.Debug("Killing...")
 	_, err := d.getClient().ShutdownInstance(d.InstanceID)

@@ -4,7 +4,7 @@ builds:
   -
     env:
       - CGO_ENABLED=0
-    binary: docker-machine-driver-vmware
+    binary: docker-machine-driver-linode
     goos:
       - windows
       - darwin
@@ -12,14 +12,14 @@ builds:
     goarch:
       - amd64
 archive:
-  name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
-  format: binary
-  replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    386: i386
-    amd64: x86_64
+  name_template: "{{ .Binary }}_{{ .Os }}-{{ .Arch }}"
+  format: zip
+# replacements:
+#    darwin: Darwin
+#    linux: Linux
+#    windows: Windows
+#    386: i386
+#    amd64: x86_64
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
 release:

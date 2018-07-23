@@ -1,27 +1,62 @@
-# Golang CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 jobs:
   build:
     docker:
-      # specify the version
-      - image: circleci/golang:1.9
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
-
-    #### TEMPLATE_NOTE: go expects specific checkout path representing url
-    #### expecting it in the form of
-    ####   /go/src/github.com/circleci/go-tool
-    ####   /go/src/bitbucket.org/circleci/go-tool
-    working_directory: /go/src/github.com/displague/docker-machine-driver-linode
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/displague/docker-machine-linode-driver
     steps:
       - checkout
+      - run:
+          name: Install tools
+          command: |
+            curl -L https://github.com/golang/dep/raw/master/install.sh | sh
+      - run:
+          name: Install dependencies
+          command: dep ensure
+      - run:
+          name: Build binary
+          command: make
+  release:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/displague/docker-machine-linode-driver
+    steps:
+      - checkout
+      - run:
+          name: Install tools
+          command: |
+            curl -L https://github.com/golang/dep/raw/master/install.sh | sh
+            go get github.com/goreleaser/goreleaser
+      - run:
+          name: Install dependencies
+          command: dep ensure
+      - run:
+          name: Run goreleaser
+          command: goreleaser
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              ignore: /^[0-9]+(\.[0-9]+)*/
+  build-and-release:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*/
+      - release:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*/
 
-      # specify any bash command here prefixed with `run: `
-      - run: go get -v -t -d ./...
-      - run: go test -v ./...
-      - run: curl -sL https://git.io/goreleaser | bash

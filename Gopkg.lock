@@ -11,10 +11,10 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
-  branch = "master"
   name = "github.com/chiefy/linodego"
   packages = ["."]
-  revision = "0acf89faa555f022ea2cb471d1d1495fcbc92fda"
+  revision = "724d397345e9c071b1cb6a62f9bb18ed21b6a212"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -143,6 +143,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cbc8356930c68b6b4122b061bd64d69c6e5bed226260bad7b0625c20604ae931"
+  inputs-digest = "f5732225df98e063b7fb618ac9816b2041e48701479c3b8ceba0f21aeb1f26a4"
   solver-name = "gps-cdcl"
   solver-version = 1

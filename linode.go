@@ -1,10 +1,12 @@
 package linode
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"strings"
 
 	"github.com/chiefy/linodego"
@@ -13,6 +15,7 @@ import (
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
+	"golang.org/x/oauth2"
 )
 
 // Driver is the implementation of BaseDriver interface
@@ -66,7 +69,15 @@ func NewDriver(hostName, storePath string) *Driver {
 // Get Linode Client
 func (d *Driver) getClient() *linodego.Client {
 	if d.client == nil {
-		client := linodego.NewClient(&d.APIToken, nil)
+		tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: d.APIToken})
+
+		oauth2Client := &http.Client{
+			Transport: &oauth2.Transport{
+				Source: tokenSource,
+			},
+		}
+
+		client := linodego.NewClient(oauth2Client)
 		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s/v%s (https://github.com/displague/docker-machine-linode)", d.DriverName(), VERSION))
 		client.SetDebug(true)
 		d.client = &client
@@ -233,7 +244,7 @@ func (d *Driver) Create() error {
 		SwapSize:       &d.SwapSize,
 	}
 
-	linode, err := client.CreateInstance(&createOpts)
+	linode, err := client.CreateInstance(context.TODO(), &createOpts)
 	if err != nil {
 		return err
 	}
@@ -262,7 +273,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Waiting for Machine Running...")
-	if err := linodego.WaitForInstanceStatus(client, d.InstanceID, linodego.InstanceRunning, 180); err != nil {
+	if err := linodego.WaitForInstanceStatus(context.TODO(), client, d.InstanceID, linodego.InstanceRunning, 180); err != nil {
 		return fmt.Errorf("wait for machine running failed: %s", err)
 	}
 
@@ -285,7 +296,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	linode, err := d.getClient().GetInstance(d.InstanceID)
+	linode, err := d.getClient().GetInstance(context.TODO(), d.InstanceID)
 	if err != nil {
 		return state.Error, err
 	}
@@ -315,14 +326,14 @@ func (d *Driver) GetState() (state.State, error) {
 // Start a host
 func (d *Driver) Start() error {
 	log.Debug("Start...")
-	_, err := d.getClient().BootInstance(d.InstanceID, 0)
+	_, err := d.getClient().BootInstance(context.TODO(), d.InstanceID, 0)
 	return err
 }
 
 // Stop a host gracefully
 func (d *Driver) Stop() error {
 	log.Debug("Stop...")
-	_, err := d.getClient().ShutdownInstance(d.InstanceID)
+	_, err := d.getClient().ShutdownInstance(context.TODO(), d.InstanceID)
 	return err
 }
 
@@ -330,7 +341,7 @@ func (d *Driver) Stop() error {
 func (d *Driver) Remove() error {
 	client := d.getClient()
 	log.Infof("Removing linode: %d", d.InstanceID)
-	if err := client.DeleteInstance(d.InstanceID); err != nil {
+	if err := client.DeleteInstance(context.TODO(), d.InstanceID); err != nil {
 		if apiErr, ok := err.(linodego.Error); ok && apiErr.Code == 404 {
 			log.Debug("Linode was already removed")
 			return nil
@@ -345,14 +356,14 @@ func (d *Driver) Remove() error {
 // have any special restart behaviour.
 func (d *Driver) Restart() error {
 	log.Debug("Restarting...")
-	_, err := d.getClient().RebootInstance(d.InstanceID, 0)
+	_, err := d.getClient().RebootInstance(context.TODO(), d.InstanceID, 0)
 	return err
 }
 
 // Kill stops a host forcefully
 func (d *Driver) Kill() error {
 	log.Debug("Killing...")
-	_, err := d.getClient().ShutdownInstance(d.InstanceID)
+	_, err := d.getClient().ShutdownInstance(context.TODO(), d.InstanceID)
 	return err
 }
 

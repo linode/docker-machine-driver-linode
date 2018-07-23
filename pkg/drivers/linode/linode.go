@@ -78,7 +78,7 @@ func (d *Driver) getClient() *linodego.Client {
 		}
 
 		client := linodego.NewClient(oauth2Client)
-		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s/v%s (https://github.com/displague/docker-machine-linode)", d.DriverName(), VERSION))
+		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s/v%s (https://github.com/displague/docker-machine-driver-linode)", d.DriverName(), VERSION))
 		client.SetDebug(true)
 		d.client = &client
 	}

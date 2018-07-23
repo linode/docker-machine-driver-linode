@@ -1,4 +1,4 @@
-# docker-machine-linode
+# docker-machine-driver-linode
 
 Linode Driver Plugin for docker-machine.
 
@@ -15,11 +15,11 @@ cd $GOPATH/src/github.com/docker/machine
 make build
 ```
 
-Then, install `docker-machine-linode` driver in the `$GOPATH` and add `$GOPATH/bin` to the `$PATH` environment variable.
+Then, install `docker-machine-driver-linode` driver in the `$GOPATH` and add `$GOPATH/bin` to the `$PATH` environment variable.
 
 ```bash
-go get github.com/displague/docker-machine-linode
-cd $GOPATH/src/github.com/displague/docker-machine-linode
+go get github.com/displague/docker-machine-driver-linode
+cd $GOPATH/src/github.com/displague/docker-machine-driver-linode
 make install
 ```
 

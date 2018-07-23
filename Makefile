@@ -1,13 +1,38 @@
-default: build
+OUT_DIR := out
+PROG := docker-machine-driver-linode
 
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
+
+ifeq ($(GOOS),windows)
+	BIN_SUFFIX := ".exe"
+endif
+
+.PHONY: build
+build:
+	go build -o $(OUT_DIR)/$(PROG)$(BIN_SUFFIX) ./
+
+.PHONY: dep
+dep:
+	dep ensure
+
+.PHONY: test
+test:
+	go test -race ./...
+
+.PHONY: check
+check:
+	gofmt -l -s -d pkg/
+	go tool vet pkg/
+
+.PHONY: clean
 clean:
-	$(RM) ./bin/docker-machine-driver-linode
-	$(RM) $(GOPATH)/bin/docker-machine-driver-linode
+	$(RM) $(OUT_DIR)/$(PROG)$(BIN_SUFFIX)
 
-build: clean
-	GOGC=off go build -i -o ./bin/docker-machine-driver-linode ./bin
+.PHONY: uninstall
+uninstall:
+	$(RM) $(GOPATH)/bin/$(PROG)$(BIN_SUFFIX)
 
-install: build
-	cp ./bin/docker-machine-driver-linode $(GOPATH)/bin/
-	
-.PHONY: build install
+.PHONY: install
+install:
+	go install

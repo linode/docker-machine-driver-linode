@@ -1,7 +1,7 @@
 package main
 
 import (
-	linode "github.com/displague/docker-machine-linode"
+	"github.com/displague/docker-machine-driver-linode/pkg/drivers/linode"
 	"github.com/docker/machine/libmachine/drivers/plugin"
 )
 

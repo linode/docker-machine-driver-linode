@@ -26,3 +26,5 @@ _testmain.go
 vendor
 # Bin
 docker-machine-driver-linode
+dist
+out

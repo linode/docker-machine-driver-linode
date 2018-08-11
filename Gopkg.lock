@@ -13,12 +13,12 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
-  digest = "1:238ff7619bd34a9b143ea77290c2d53c9f296ade648eb0d4632fc64b3225e576"
+  digest = "1:cc0b849fe53639d4f52c4986589c1805382b42ffa3cc087fddc7c4555349af24"
   name = "github.com/chiefy/linodego"
   packages = ["."]
   pruneopts = "UT"
-  revision = "89425e0b0e3685192e1fdcd8b86ef361e591c211"
-  version = "v0.1.1"
+  revision = "e7bd44d89fc5db41b43b8bce7278550a589d7ab6"
+  version = "v0.2.0"
 
 [[projects]]
   digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
@@ -37,7 +37,7 @@
     "pkg/term/windows",
   ]
   pruneopts = "UT"
-  revision = "eeea12db7a65e6ad633747e49928c80b0f18d86b"
+  revision = "4122eb1a43a42c4c8b827b4d0fb3d6543f9f2c91"
 
 [[projects]]
   digest = "1:e763ac6333e3c4ee5eca4ff85bee97f58b3ffc723ac58e81d273c8f5cc6a6567"
@@ -60,12 +60,12 @@
   version = "v0.15.0"
 
 [[projects]]
-  digest = "1:2ff22b45e9aa8f80ea4a4687f6f9d714a31f1b6c074a223671ae7ce837d4389c"
+  digest = "1:cf9c32df6fe209f9b5db1aa91c6e4084d3867baa9063803df07c5b80a37f1f90"
   name = "github.com/go-resty/resty"
   packages = ["."]
   pruneopts = "UT"
-  revision = "fccc498aed22c31ff3768bcac00795f94149a21d"
-  version = "v1.7.0"
+  revision = "97a15579492cd5f35632499f315d7a8df94160a1"
+  version = "v1.8.0"
 
 [[projects]]
   digest = "1:15042ad3498153684d09f393bbaec6b216c8eec6d61f63dff711de7d64ed8861"
@@ -101,7 +101,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:014ee502e4880ffba2a0103cefa6af78cf8767ce08bc29376e6b86cdcaa2ec06"
+  digest = "1:10e257965f5774c1ef03b258130a6caa8dddbfe03041f69d7c16a00463dece62"
   name = "golang.org/x/crypto"
   packages = [
     "curve25519",
@@ -114,11 +114,11 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "56440b844dfe139a8ac053f4ecac0b20b79058f4"
+  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
 
 [[projects]]
   branch = "master"
-  digest = "1:eab31099394d4bae3da2810d726bb38165e16368244e3ce76fe07d27a3a51fc9"
+  digest = "1:33b9d71d1dde2106309484a388eb7ba53cd1f67014e34a71f7b3dbc20bd186e5"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -127,7 +127,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "f4c29de78a2a91c00474a2e689954305c350adf9"
+  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
 
 [[projects]]
   branch = "master"
@@ -142,14 +142,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bdd70b95d2f0faaad6d9e259aad84738c6bdeb8f45245be6487e88df45f5a0f1"
+  digest = "1:a60cae5be8993938498243605b120290533a5208fd5cac81c932afbad3642fb0"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "0ffbfd41fbef8ffcf9b62b0b0aa3a5873ed7a4fe"
+  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"

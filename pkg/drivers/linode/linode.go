@@ -41,7 +41,7 @@ type Driver struct {
 
 const (
 	// VERSION represents the semver version of the package
-	VERSION               = "0.0.8"
+	VERSION               = "0.0.9"
 	defaultSSHPort        = 22
 	defaultSSHUser        = "root"
 	defaultInstanceImage  = "linode/ubuntu18.04"
@@ -244,7 +244,7 @@ func (d *Driver) Create() error {
 		SwapSize:       &d.SwapSize,
 	}
 
-	linode, err := client.CreateInstance(context.TODO(), &createOpts)
+	linode, err := client.CreateInstance(context.TODO(), createOpts)
 	if err != nil {
 		return err
 	}
@@ -273,7 +273,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Waiting for Machine Running...")
-	if err := linodego.WaitForInstanceStatus(context.TODO(), client, d.InstanceID, linodego.InstanceRunning, 180); err != nil {
+	if _, err := client.WaitForInstanceStatus(context.TODO(), d.InstanceID, linodego.InstanceRunning, 180); err != nil {
 		return fmt.Errorf("wait for machine running failed: %s", err)
 	}
 

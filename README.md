@@ -18,8 +18,8 @@ make build
 Then, install `docker-machine-driver-linode` driver in the `$GOPATH` and add `$GOPATH/bin` to the `$PATH` environment variable.
 
 ```bash
-go get github.com/displague/docker-machine-driver-linode
-cd $GOPATH/src/github.com/displague/docker-machine-driver-linode
+go get github.com/linode/docker-machine-driver-linode
+cd $GOPATH/src/github.com/linode/docker-machine-driver-linode
 make install
 ```
 

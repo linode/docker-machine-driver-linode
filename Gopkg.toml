@@ -26,8 +26,8 @@
 
 
 [[constraint]]
-  name = "github.com/chiefy/linodego"
-  version = "0.2.0"
+  name = "github.com/linode/linodego"
+  version = "0.3.0"
 
 [[constraint]]
   name = "github.com/docker/machine"

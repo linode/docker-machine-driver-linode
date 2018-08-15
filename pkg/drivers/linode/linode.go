@@ -9,12 +9,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/chiefy/linodego"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/linode/linodego"
 	"golang.org/x/oauth2"
 )
 
@@ -78,7 +78,7 @@ func (d *Driver) getClient() *linodego.Client {
 		}
 
 		client := linodego.NewClient(oauth2Client)
-		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s/v%s (https://github.com/displague/docker-machine-driver-linode)", d.DriverName(), VERSION))
+		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s/v%s linodego/%s", d.DriverName(), VERSION, linodego.Version))
 		client.SetDebug(true)
 		d.client = &client
 	}

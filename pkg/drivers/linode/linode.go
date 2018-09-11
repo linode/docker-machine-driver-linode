@@ -326,14 +326,14 @@ func (d *Driver) GetState() (state.State, error) {
 // Start a host
 func (d *Driver) Start() error {
 	log.Debug("Start...")
-	_, err := d.getClient().BootInstance(context.TODO(), d.InstanceID, 0)
+	err := d.getClient().BootInstance(context.TODO(), d.InstanceID, 0)
 	return err
 }
 
 // Stop a host gracefully
 func (d *Driver) Stop() error {
 	log.Debug("Stop...")
-	_, err := d.getClient().ShutdownInstance(context.TODO(), d.InstanceID)
+	err := d.getClient().ShutdownInstance(context.TODO(), d.InstanceID)
 	return err
 }
 
@@ -356,14 +356,14 @@ func (d *Driver) Remove() error {
 // have any special restart behaviour.
 func (d *Driver) Restart() error {
 	log.Debug("Restarting...")
-	_, err := d.getClient().RebootInstance(context.TODO(), d.InstanceID, 0)
+	err := d.getClient().RebootInstance(context.TODO(), d.InstanceID, 0)
 	return err
 }
 
 // Kill stops a host forcefully
 func (d *Driver) Kill() error {
 	log.Debug("Killing...")
-	_, err := d.getClient().ShutdownInstance(context.TODO(), d.InstanceID)
+	err := d.getClient().ShutdownInstance(context.TODO(), d.InstanceID)
 	return err
 }
 

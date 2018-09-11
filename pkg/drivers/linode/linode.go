@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"encoding/json"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
@@ -37,6 +38,11 @@ type Driver struct {
 	InstanceImage  string
 	InstanceKernel string
 	SwapSize       int
+
+	StackScriptID    int
+	StackScriptUser  string
+	StackScriptLabel string
+	StackScriptData  map[string]string
 }
 
 const (
@@ -167,6 +173,18 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "Linode Instance Swap Size (MB)",
 			Value:  defaultSwapSize,
 		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_STACKSCRIPT",
+			Name:   "linode-stackscript",
+			Usage:  "Specifies the Linode StackScript to use to create the instance",
+			Value:  "",
+		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_STACKSCRIPT_DATA",
+			Name:   "linode-stackscript-data",
+			Usage:  "A JSON string specifying data for the selected StackScript",
+			Value: "",
+		},
 	}
 }
 
@@ -203,6 +221,24 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 		return fmt.Errorf("linode driver requires the --linode-root-pass option")
 	}
 
+	stackScript := flags.String("linode-stackscript")
+	if stackScript != "" {
+		ss := strings.SplitN(stackScript, "/", 2)
+		if len(ss) != 2 {
+			return fmt.Errorf("linode StackScripts must be specified using username/label syntax")
+		}
+
+		d.StackScriptUser = ss[0]
+		d.StackScriptLabel = ss[1]
+
+		stackScriptData := flags.String("linode-stackscript-data")
+
+		err := json.Unmarshal([]byte(stackScriptData), &d.StackScriptData)
+		if err != nil {
+			return fmt.Errorf("linode StackScript data must be valid JSON: %v", err)
+		}
+	}
+	
 	if len(d.InstanceLabel) == 0 {
 		d.InstanceLabel = d.GetMachineName()
 	}
@@ -216,8 +252,32 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 func (d *Driver) PreCreateCheck() error {
 	// TODO linode-stackscript-file should be read and uploaded (private), then used for boot.
 	// RevNote could be sha256 of file so the file can be referenced instead of reuploaded.
-	// linode-stackscript would let the user specify an existing id
-	// linode-stackscript-data would need to be a json input
+
+	if d.StackScriptUser != "" {
+		client := d.getClient()
+
+		options := map[string]string {
+			"username": d.StackScriptUser,
+			"label": d.StackScriptLabel,
+		}
+		b, err := json.Marshal(options)
+		if err != nil {
+			return err
+		}
+		opts := linodego.NewListOptions(0, string(b))
+		stackscripts, err := client.ListStackscripts(context.TODO(), opts)
+		if err != nil {
+			return err
+		}
+		if len(stackscripts) != 1 {
+			return fmt.Errorf("StackScript %s/%s not found", d.StackScriptUser, d.StackScriptLabel)
+		}
+
+		d.StackScriptID = stackscripts[0].ID
+
+		log.Infof("Using StackScript %s/%s (%d)", d.StackScriptUser, d.StackScriptLabel, d.StackScriptID)
+	}
+
 	return nil
 }
 
@@ -242,6 +302,11 @@ func (d *Driver) Create() error {
 		AuthorizedKeys: []string{strings.TrimSpace(publicKey)},
 		Image:          d.InstanceImage,
 		SwapSize:       &d.SwapSize,
+	}
+
+	if d.StackScriptID != 0 {
+		createOpts.StackScriptID = d.StackScriptID
+		createOpts.StackScriptData = d.StackScriptData
 	}
 
 	linode, err := client.CreateInstance(context.TODO(), createOpts)

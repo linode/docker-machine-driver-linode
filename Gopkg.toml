@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/linode/linodego"
-  version = "0.3.0"
+  version = "0.5.1"
 
 [[constraint]]
   name = "github.com/docker/machine"

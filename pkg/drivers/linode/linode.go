@@ -8,6 +8,8 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"strconv"
+	"encoding/json"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
@@ -37,6 +39,11 @@ type Driver struct {
 	InstanceImage  string
 	InstanceKernel string
 	SwapSize       int
+
+	StackScriptID    int
+	StackScriptUser  string
+	StackScriptLabel string
+	StackScriptData  map[string]string
 }
 
 const (
@@ -50,6 +57,8 @@ const (
 	defaultInstanceKernel = "linode/grub2"
 	defaultSwapSize       = 512
 	defaultDockerPort     = 2376
+
+	defaultContainerLinuxSSHUser = "core"
 )
 
 // NewDriver
@@ -124,7 +133,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			EnvVar: "LINODE_LABEL",
 			Name:   "linode-label",
 			Usage:  "Linode Instance Label",
-		},
+	},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_REGION",
 			Name:   "linode-region",
@@ -142,6 +151,12 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Name:   "linode-ssh-port",
 			Usage:  "Linode Instance SSH Port",
 			Value:  defaultSSHPort,
+		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_SSH_USER",
+			Name:   "linode-ssh-user",
+			Usage:  "Specifies the user as which docker-machine should log in to the Linode instance to install Docker.",
+			Value:  "",
 		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_IMAGE",
@@ -167,13 +182,38 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "Linode Instance Swap Size (MB)",
 			Value:  defaultSwapSize,
 		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_STACKSCRIPT",
+			Name:   "linode-stackscript",
+			Usage:  "Specifies the Linode StackScript to use to create the instance",
+			Value:  "",
+		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_STACKSCRIPT_DATA",
+			Name:   "linode-stackscript-data",
+			Usage:  "A JSON string specifying data for the selected StackScript",
+			Value: "",
+		},
 	}
+}
+
+// GetSSHPort returns port for use with ssh
+func (d *Driver) GetSSHPort() (int, error) {
+	if d.SSHPort == 0 {
+		d.SSHPort = defaultSSHPort
+	}
+
+	return d.SSHPort, nil
 }
 
 // GetSSHUsername returns username for use with ssh
 func (d *Driver) GetSSHUsername() string {
 	if d.SSHUser == "" {
-		d.SSHUser = defaultSSHUser
+		if strings.Contains(d.InstanceImage, "linode/containerlinux") {
+			d.SSHUser = defaultContainerLinuxSSHUser
+		} else {
+			d.SSHUser = defaultSSHUser
+		}
 	}
 
 	return d.SSHUser
@@ -187,12 +227,15 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.InstanceType = flags.String("linode-instance-type")
 	d.RootPassword = flags.String("linode-root-pass")
 	d.SSHPort = flags.Int("linode-ssh-port")
+	d.SSHUser = flags.String("linode-ssh-user")
 	d.InstanceImage = flags.String("linode-image")
 	d.InstanceKernel = flags.String("linode-kernel")
 	d.InstanceLabel = flags.String("linode-label")
 	d.SwapSize = flags.Int("linode-swap-size")
 	d.DockerPort = flags.Int("linode-docker-port")
 
+	log.Infof("Using SSH port %d", d.SSHPort)
+	
 	d.SetSwarmConfigFromFlags(flags)
 
 	if d.APIToken == "" {
@@ -203,11 +246,31 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 		return fmt.Errorf("linode driver requires the --linode-root-pass option")
 	}
 
+	stackScript := flags.String("linode-stackscript")
+	if stackScript != "" {
+		sid, err := strconv.Atoi(stackScript)
+		if err == nil {
+			d.StackScriptID = sid
+		} else {
+			ss := strings.SplitN(stackScript, "/", 2)
+			if len(ss) != 2 {
+				return fmt.Errorf("linode StackScripts must be specified using username/label syntax, or using their identifier")
+			}
+
+			d.StackScriptUser = ss[0]
+			d.StackScriptLabel = ss[1]
+
+			stackScriptData := flags.String("linode-stackscript-data")
+
+			err := json.Unmarshal([]byte(stackScriptData), &d.StackScriptData)
+			if err != nil {
+				return fmt.Errorf("linode StackScript data must be valid JSON: %v", err)
+			}
+		}
+	}
+
 	if len(d.InstanceLabel) == 0 {
 		d.InstanceLabel = d.GetMachineName()
-	}
-	if strings.Contains(d.InstanceImage, "linode/containerlinux") {
-		d.SSHUser = "core"
 	}
 
 	return nil
@@ -216,8 +279,51 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 func (d *Driver) PreCreateCheck() error {
 	// TODO linode-stackscript-file should be read and uploaded (private), then used for boot.
 	// RevNote could be sha256 of file so the file can be referenced instead of reuploaded.
-	// linode-stackscript would let the user specify an existing id
-	// linode-stackscript-data would need to be a json input
+
+	client := d.getClient()
+
+	if d.StackScriptUser != "" {
+		/* N.B. username isn't on the list of filterable fields, however
+                        adding it doesn't make anything fail, so if it becomes
+                        filterable in future this will become more efficient */
+		options := map[string]string {
+			"username": d.StackScriptUser,
+			"label": d.StackScriptLabel,
+		}
+		b, err := json.Marshal(options)
+		if err != nil {
+			return err
+		}
+		opts := linodego.NewListOptions(0, string(b))
+		stackscripts, err := client.ListStackscripts(context.TODO(), opts)
+		if err != nil {
+			return err
+		}
+		var script *linodego.Stackscript = nil
+		for _, s := range stackscripts {
+			if s.Username == d.StackScriptUser {
+				script = &s
+				break
+			}
+		}
+		if script == nil {
+			return fmt.Errorf("StackScript not found: %s/%s", d.StackScriptUser, d.StackScriptLabel)
+		}
+
+		d.StackScriptUser = script.Username
+		d.StackScriptLabel = script.Label
+		d.StackScriptID = script.ID
+	} else if (d.StackScriptID != 0) {
+		script, err := client.GetStackscript(context.TODO(), d.StackScriptID)
+
+		if err != nil {
+			return fmt.Errorf("StackScript %d could not be used: %v", err)
+		}
+
+		d.StackScriptUser = script.Username
+		d.StackScriptLabel = script.Label
+	}
+
 	return nil
 }
 
@@ -233,7 +339,6 @@ func (d *Driver) Create() error {
 	client := d.getClient()
 
 	// Create a linode
-	log.Info("Creating linode instance")
 	createOpts := linodego.InstanceCreateOptions{
 		Region:         d.Region,
 		Type:           d.InstanceType,
@@ -242,6 +347,12 @@ func (d *Driver) Create() error {
 		AuthorizedKeys: []string{strings.TrimSpace(publicKey)},
 		Image:          d.InstanceImage,
 		SwapSize:       &d.SwapSize,
+	}
+
+	if d.StackScriptID != 0 {
+		createOpts.StackScriptID = d.StackScriptID
+		createOpts.StackScriptData = d.StackScriptData
+		log.Infof("Using StackScript %d: %s/%s", d.StackScriptID, d.StackScriptUser, d.StackScriptLabel)
 	}
 
 	linode, err := client.CreateInstance(context.TODO(), createOpts)

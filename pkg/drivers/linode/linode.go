@@ -2,14 +2,14 @@ package linode
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"strings"
 	"strconv"
-	"encoding/json"
+	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
@@ -61,7 +61,7 @@ const (
 	defaultContainerLinuxSSHUser = "core"
 )
 
-// NewDriver
+// NewDriver creates and returns a new instance of the Linode driver
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
 		InstanceImage: defaultInstanceImage,
@@ -75,7 +75,7 @@ func NewDriver(hostName, storePath string) *Driver {
 	}
 }
 
-// Get Linode Client
+// getClient prepares the Linode APIv4 Client
 func (d *Driver) getClient() *linodego.Client {
 	if d.client == nil {
 		tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: d.APIToken})
@@ -133,7 +133,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			EnvVar: "LINODE_LABEL",
 			Name:   "linode-label",
 			Usage:  "Linode Instance Label",
-	},
+		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_REGION",
 			Name:   "linode-region",
@@ -192,7 +192,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			EnvVar: "LINODE_STACKSCRIPT_DATA",
 			Name:   "linode-stackscript-data",
 			Usage:  "A JSON string specifying data for the selected StackScript",
-			Value: "",
+			Value:  "",
 		},
 	}
 }
@@ -234,8 +234,6 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.SwapSize = flags.Int("linode-swap-size")
 	d.DockerPort = flags.Int("linode-docker-port")
 
-	log.Infof("Using SSH port %d", d.SSHPort)
-	
 	d.SetSwarmConfigFromFlags(flags)
 
 	if d.APIToken == "" {
@@ -264,7 +262,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 			err := json.Unmarshal([]byte(stackScriptData), &d.StackScriptData)
 			if err != nil {
-				return fmt.Errorf("linode StackScript data must be valid JSON: %v", err)
+				return fmt.Errorf("Linode StackScript data must be valid JSON: %s", err)
 			}
 		}
 	}
@@ -276,19 +274,20 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	return nil
 }
 
+// PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation
 func (d *Driver) PreCreateCheck() error {
-	// TODO linode-stackscript-file should be read and uploaded (private), then used for boot.
+	// TODO(displague) linode-stackscript-file should be read and uploaded (private), then used for boot.
 	// RevNote could be sha256 of file so the file can be referenced instead of reuploaded.
 
 	client := d.getClient()
 
 	if d.StackScriptUser != "" {
 		/* N.B. username isn't on the list of filterable fields, however
-                        adding it doesn't make anything fail, so if it becomes
-                        filterable in future this will become more efficient */
-		options := map[string]string {
+		   adding it doesn't make anything fail, so if it becomes
+		   filterable in future this will become more efficient */
+		options := map[string]string{
 			"username": d.StackScriptUser,
-			"label": d.StackScriptLabel,
+			"label":    d.StackScriptLabel,
 		}
 		b, err := json.Marshal(options)
 		if err != nil {
@@ -299,7 +298,7 @@ func (d *Driver) PreCreateCheck() error {
 		if err != nil {
 			return err
 		}
-		var script *linodego.Stackscript = nil
+		var script *linodego.Stackscript
 		for _, s := range stackscripts {
 			if s.Username == d.StackScriptUser {
 				script = &s
@@ -313,11 +312,11 @@ func (d *Driver) PreCreateCheck() error {
 		d.StackScriptUser = script.Username
 		d.StackScriptLabel = script.Label
 		d.StackScriptID = script.ID
-	} else if (d.StackScriptID != 0) {
+	} else if d.StackScriptID != 0 {
 		script, err := client.GetStackscript(context.TODO(), d.StackScriptID)
 
 		if err != nil {
-			return fmt.Errorf("StackScript %d could not be used: %v", err)
+			return fmt.Errorf("StackScript %d could not be used: %s", d.StackScriptID, err)
 		}
 
 		d.StackScriptUser = script.Username
@@ -330,6 +329,10 @@ func (d *Driver) PreCreateCheck() error {
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	log.Info("Creating Linode machine instance...")
+
+	if d.SSHPort != defaultSSHPort {
+		log.Infof("Using SSH port %d", d.SSHPort)
+	}
 
 	publicKey, err := d.createSSHKey()
 	if err != nil {
@@ -499,10 +502,15 @@ func (d *Driver) publicSSHKeyPath() string {
 // privateIP determines if an IP is for private use (RFC1918)
 // https://stackoverflow.com/a/41273687
 func privateIP(ip net.IP) bool {
-	private := false
-	_, private24BitBlock, _ := net.ParseCIDR("10.0.0.0/8")
-	_, private20BitBlock, _ := net.ParseCIDR("172.16.0.0/12")
-	_, private16BitBlock, _ := net.ParseCIDR("192.168.0.0/16")
-	private = private24BitBlock.Contains(ip) || private20BitBlock.Contains(ip) || private16BitBlock.Contains(ip)
-	return private
+	return ipInCIDR(ip, "10.0.0.0/8") || ipInCIDR(ip, "172.16.0.0/12") || ipInCIDR(ip, "192.168.0.0/16")
+}
+
+func ipInCIDR(ip net.IP, CIDR string) bool {
+	_, ipNet, err := net.ParseCIDR(CIDR)
+	if err != nil {
+		log.Errorf("Error parsing CIDR %s: %s", CIDR, err)
+
+		return false
+	}
+	return ipNet.Contains(ip)
 }

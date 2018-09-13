@@ -1,6 +1,7 @@
 package linode
 
 import (
+	"net"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -22,4 +23,33 @@ func TestSetConfigFromFlags(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Empty(t, checkFlags.InvalidFlags)
+}
+
+func TestPrivateIP(t *testing.T) {
+	ip := net.IP{}
+	for _, addr := range [][]byte{
+		[]byte("172.16.0.1"),
+		[]byte("192.168.0.1"),
+		[]byte("10.0.0.1"),
+	} {
+		if err := ip.UnmarshalText(addr); err != nil {
+			t.Error(err)
+		}
+		assert.True(t, privateIP(ip))
+	}
+
+	if err := ip.UnmarshalText([]byte("1.1.1.1")); err != nil {
+		t.Error(err)
+	}
+	assert.False(t, privateIP(ip))
+}
+
+func TestIPInCIDR(t *testing.T) {
+	tenOne := net.IP{}
+
+	if err := tenOne.UnmarshalText([]byte("10.0.0.1")); err != nil {
+		t.Error(err)
+	}
+	assert.True(t, ipInCIDR(tenOne, "10.0.0.0/8"), "10.0.0.1 is in 10.0.0.0/8")
+	assert.False(t, ipInCIDR(tenOne, "254.0.0.0/8"), "10.0.0.1 is not in 254.0.0.0/8")
 }

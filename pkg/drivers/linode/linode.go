@@ -257,12 +257,13 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 			d.StackScriptUser = ss[0]
 			d.StackScriptLabel = ss[1]
+		}
 
-			stackScriptData := flags.String("linode-stackscript-data")
-
-			err := json.Unmarshal([]byte(stackScriptData), &d.StackScriptData)
+		stackScriptDataStr := flags.String("linode-stackscript-data")
+		if stackScriptDataStr != "" {
+			err := json.Unmarshal([]byte(stackScriptDataStr), &d.StackScriptData)
 			if err != nil {
-				return fmt.Errorf("Linode StackScript data must be valid JSON: %s", err)
+				return fmt.Errorf("linode StackScript data must be valid JSON: %s", err)
 			}
 		}
 	}

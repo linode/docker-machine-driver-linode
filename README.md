@@ -39,7 +39,7 @@ LINODE_ROOT_PASSWORD=$(openssl rand -base64 32); echo Password for root: $LINODE
 
 docker-machine create -d linode --linode-token=$LINODE_TOKEN --linode-root-pass=$LINODE_ROOT_PASSWORD linode
 eval $(docker-machine env linode)
-docker run --rm --it debian bash
+docker run --rm -it debian bash
 ```
 
 ```bash

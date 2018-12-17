@@ -25,9 +25,10 @@ type Driver struct {
 	*drivers.BaseDriver
 	client *linodego.Client
 
-	APIToken   string
-	IPAddress  string
-	DockerPort int
+	APIToken        string
+	IPAddress       string
+	DockerPort      int
+	CreatePrivateIP bool
 
 	InstanceID    int
 	InstanceLabel string
@@ -194,6 +195,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "A JSON string specifying data for the selected StackScript",
 			Value:  "",
 		},
+		mcnflag.BoolFlag{
+			EnvVar: "LINODE_CREATE_PRIVATE_IP",
+			Name:   "linode-create-private-ip",
+			Usage:  "Create private IP for the instance",
+		},
 	}
 }
 
@@ -233,6 +239,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.InstanceLabel = flags.String("linode-label")
 	d.SwapSize = flags.Int("linode-swap-size")
 	d.DockerPort = flags.Int("linode-docker-port")
+	d.CreatePrivateIP = flags.Bool("linode-create-private-ip")
 
 	d.SetSwarmConfigFromFlags(flags)
 
@@ -351,6 +358,7 @@ func (d *Driver) Create() error {
 		AuthorizedKeys: []string{strings.TrimSpace(publicKey)},
 		Image:          d.InstanceImage,
 		SwapSize:       &d.SwapSize,
+		PrivateIP:      d.CreatePrivateIP,
 	}
 
 	if d.StackScriptID != 0 {

@@ -25,10 +25,11 @@ type Driver struct {
 	*drivers.BaseDriver
 	client *linodego.Client
 
-	APIToken        string
-	IPAddress       string
-	DockerPort      int
-	CreatePrivateIP bool
+	APIToken         string
+	IPAddress        string
+	PrivateIPAddress string
+	CreatePrivateIP  bool
+	DockerPort       int
 
 	InstanceID    int
 	InstanceLabel string
@@ -379,6 +380,8 @@ func (d *Driver) Create() error {
 		if private := privateIP(*address); !private {
 			d.IPAddress = address.String()
 			break
+		} else if d.CreatePrivateIP {
+			d.PrivateIPAddress = address.String()
 		}
 	}
 
@@ -386,10 +389,16 @@ func (d *Driver) Create() error {
 		return errors.New("Linode IP Address is not found")
 	}
 
-	log.Debugf("Created Linode Instance %s (%d), IP address %s",
+	if d.CreatePrivateIP && d.PrivateIPAddress == "" {
+		return errors.New("Linode Private IP Address is not found")
+	}
+
+	log.Debugf("Created Linode Instance %s (%d), IP address %s, Private IP address %s",
 		d.InstanceLabel,
 		d.InstanceID,
-		d.IPAddress)
+		d.IPAddress,
+		d.PrivateIPAddress,
+	)
 
 	if err != nil {
 		return err

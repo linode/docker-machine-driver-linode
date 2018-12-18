@@ -50,7 +50,7 @@ type Driver struct {
 
 const (
 	// VERSION represents the semver version of the package
-	VERSION               = "0.0.12"
+	VERSION               = "0.0.13"
 	defaultSSHPort        = 22
 	defaultSSHUser        = "root"
 	defaultInstanceImage  = "linode/ubuntu18.04"

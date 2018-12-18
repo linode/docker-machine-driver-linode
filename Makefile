@@ -4,7 +4,7 @@ PROG := docker-machine-driver-linode
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 
-GO111MODULE=on
+export GO111MODULE=on
 
 ifeq ($(GOOS),windows)
 	BIN_SUFFIX := ".exe"

@@ -1,13 +1,28 @@
 # docker-machine-driver-linode
 
+[![GoDoc](https://godoc.org/github.com/linode/docker-machine-driver-linode?status.svg)](https://godoc.org/github.com/linode/docker-machine-driver-linode)
+[![Go Report Card](https://goreportcard.com/badge/github.com/linode/docker-machine-driver-linode)](https://goreportcard.com/report/github.com/linode/docker-machine-driver-linode)
+[![CircleCI](https://circleci.com/gh/linode/docker-machine-driver-linode.svg?style=svg)](https://circleci.com/gh/linode/docker-machine-driver-linode)
+[![GitHub release](https://img.shields.io/github/release/linode/docker-machine-driver-linode.svg)](https://github.com/linode/docker-machine-driver-linode/releases/)
+
 Linode Driver Plugin for docker-machine.
 
 ## Install
 
-First, docker-machine is required, documentation for how to install `docker-machine`
-[is available here](https://docs.docker.com/machine/install-machine/).
+`docker-machine` is required, [see the installation documentation](https://docs.docker.com/machine/install-machine/).
 
-Or, you can install `docker-machine` from source by running:
+Then, install the latest release for your environment from the [releases list](https://github.com/linode/docker-machine-driver-linode/releases).
+
+### Installing from source
+
+If you would rather build from source, you will need to have a working `go` 1.11+ environment,
+
+```bash
+eval $(go env)
+export PATH="$PATH:$GOPATH/bin"
+```
+
+You can then install `docker-machine` from source by running:
 
 ```bash
 go get github.com/docker/machine
@@ -15,7 +30,7 @@ cd $GOPATH/src/github.com/docker/machine
 make build
 ```
 
-Then, install `docker-machine-driver-linode` driver in the `$GOPATH` and add `$GOPATH/bin` to the `$PATH` environment variable.
+And then compile the `docker-machine-driver-linode` driver:
 
 ```bash
 go get github.com/linode/docker-machine-driver-linode

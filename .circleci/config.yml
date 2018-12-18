@@ -2,34 +2,23 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.10
+      - image: circleci/golang:1.11
     working_directory: /go/src/github.com/linode/docker-machine-driver-linode
     steps:
       - checkout
-      - run:
-          name: Install tools
-          command: |
-            curl -L https://github.com/golang/dep/raw/master/install.sh | sh
-      - run:
-          name: Install dependencies
-          command: dep ensure
       - run:
           name: Build binary
           command: make
   release:
     docker:
-      - image: circleci/golang:1.10
+      - image: circleci/golang:1.11
     working_directory: /go/src/github.com/linode/docker-machine-driver-linode
     steps:
       - checkout
       - run:
           name: Install tools
           command: |
-            curl -L https://github.com/golang/dep/raw/master/install.sh | sh
             go get github.com/goreleaser/goreleaser
-      - run:
-          name: Install dependencies
-          command: dep ensure
       - run:
           name: Run goreleaser
           command: goreleaser

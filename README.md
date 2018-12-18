@@ -74,6 +74,14 @@ Successfully removed linode
 | `linode-stackscript-data` | `LINODE_STACKSCRIPT_DATA` | None | A JSON string specifying data that is passed (via UDF) to the selected StackScript.
 | `linode-create-private-ip` | `LINODE_CREATE_PRIVATE_IP` | None | A flag specifying to create private IP for the Linode instance.
 
+## Debugging
+
+Detailed run output will be emitted when using the LinodeGo `LINODE_DEBUG=1` option along with the `docker-machine` `--debug` option.
+
+```bash
+LINODE_DEBUG=1 docker-machine --debug  create -d linode --linode-token=$LINODE_TOKEN --linode-root-pass=$ROOT_PASS machinename
+```
+
 ## Discussion / Help
 
 Join us at [#linodego](https://gophers.slack.com/messages/CAG93EB2S) on the [gophers slack](https://gophers.slack.com)

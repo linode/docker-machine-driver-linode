@@ -379,7 +379,6 @@ func (d *Driver) Create() error {
 	for _, address := range linode.IPv4 {
 		if private := privateIP(*address); !private {
 			d.IPAddress = address.String()
-			break
 		} else if d.CreatePrivateIP {
 			d.PrivateIPAddress = address.String()
 		}
@@ -393,7 +392,7 @@ func (d *Driver) Create() error {
 		return errors.New("Linode Private IP Address is not found")
 	}
 
-	log.Debugf("Created Linode Instance %s (%d), IP address %s, Private IP address %s",
+	log.Debugf("Created Linode Instance %s (%d), IP address %q, Private IP address %q",
 		d.InstanceLabel,
 		d.InstanceID,
 		d.IPAddress,

@@ -4,20 +4,24 @@ PROG := docker-machine-driver-linode
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 
+GO111MODULE=on
+
 ifeq ($(GOOS),windows)
 	BIN_SUFFIX := ".exe"
 endif
 
 .PHONY: build
-build:
+build: dep
 	go build -o $(OUT_DIR)/$(PROG)$(BIN_SUFFIX) ./
 
 .PHONY: dep
 dep:
-	dep ensure
+	@GO111MODULE=on
+	go get -d ./
+	go mod verify
 
 .PHONY: test
-test:
+test: dep
 	go test -race ./...
 
 .PHONY: check
@@ -34,5 +38,5 @@ uninstall:
 	$(RM) $(GOPATH)/bin/$(PROG)$(BIN_SUFFIX)
 
 .PHONY: install
-install:
+install: build
 	go install

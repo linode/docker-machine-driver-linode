@@ -56,7 +56,6 @@ docker-machine create -d linode --linode-token=<linode-token> --linode-root-pass
 | `linode-region` | `LINODE_REGION` | `us-east` | The Linode Instance `region` (see [here](https://api.linode.com/v4/regions))
 | `linode-instance-type` | `LINODE_INSTANCE_TYPE` | `g6-standard-4` | The Linode Instance `type` (see [here](https://api.linode.com/v4/linode/types))
 | `linode-image` | `LINODE_IMAGE` | `linode/ubuntu18.04` | The Linode Instance `image` which provides the Linux distribution (see [here](https://api.linode.com/v4/images)).
-| `linode-kernel` | `LINODE_KERNEL` | `linode/grub2` | The Linux Instance `kernel` to boot.  `linode/grub2` will defer to the distribution kernel. (see [here](https://api.linode.com/v4/linode/kernels) (`?page=N`))
 | `linode-ssh-port` | `LINODE_SSH_PORT` | `22` | The port that SSH is running on, needed for Docker Machine to provision the Linode.
 | `linode-ssh-user` | `LINODE_SSH_USER` | `root` | The user as which docker-machine should log in to the Linode instance to install Docker.  This user must have passwordless sudo.
 | `linode-docker-port` | `LINODE_DOCKER_PORT` | `2376` | The TCP port of the Linode that Docker will be listening on

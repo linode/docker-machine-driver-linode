@@ -35,13 +35,12 @@ type Driver struct {
 	InstanceID    int
 	InstanceLabel string
 
-	Region         string
-	InstanceType   string
-	RootPassword   string
-	SSHPort        int
-	InstanceImage  string
-	InstanceKernel string
-	SwapSize       int
+	Region        string
+	InstanceType  string
+	RootPassword  string
+	SSHPort       int
+	InstanceImage string
+	SwapSize      int
 
 	StackScriptID    int
 	StackScriptUser  string
@@ -55,14 +54,13 @@ var (
 )
 
 const (
-	defaultSSHPort        = 22
-	defaultSSHUser        = "root"
-	defaultInstanceImage  = "linode/ubuntu18.04"
-	defaultRegion         = "us-east"
-	defaultInstanceType   = "g6-standard-4"
-	defaultInstanceKernel = "linode/grub2"
-	defaultSwapSize       = 512
-	defaultDockerPort     = 2376
+	defaultSSHPort       = 22
+	defaultSSHUser       = "root"
+	defaultInstanceImage = "linode/ubuntu18.04"
+	defaultRegion        = "us-east"
+	defaultInstanceType  = "g6-standard-4"
+	defaultSwapSize      = 512
+	defaultDockerPort    = 2376
 
 	defaultContainerLinuxSSHUser = "core"
 )
@@ -176,12 +174,6 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "Specifies the Linode Instance image which determines the OS distribution and base files",
 			Value:  defaultInstanceImage, // "linode/ubuntu18.04", "linode/arch", ...
 		},
-		mcnflag.StringFlag{
-			EnvVar: "LINODE_KERNEL",
-			Name:   "linode-kernel",
-			Usage:  "Linode Instance Kernel",
-			Value:  defaultInstanceKernel, // linode/latest-64bit, ..
-		},
 		mcnflag.IntFlag{
 			EnvVar: "LINODE_DOCKER_PORT",
 			Name:   "linode-docker-port",
@@ -251,7 +243,6 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.SSHPort = flags.Int("linode-ssh-port")
 	d.SSHUser = flags.String("linode-ssh-user")
 	d.InstanceImage = flags.String("linode-image")
-	d.InstanceKernel = flags.String("linode-kernel")
 	d.InstanceLabel = flags.String("linode-label")
 	d.SwapSize = flags.Int("linode-swap-size")
 	d.DockerPort = flags.Int("linode-docker-port")

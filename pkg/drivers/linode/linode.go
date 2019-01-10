@@ -2,6 +2,8 @@ package linode
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -102,6 +104,16 @@ func (d *Driver) getClient() *linodego.Client {
 		d.client = &client
 	}
 	return d.client
+}
+
+func createRandomRootPassword() (string, error) {
+	rawRootPass := make([]byte, 50)
+	_, err := rand.Read(rawRootPass)
+	if err != nil {
+		return "", fmt.Errorf("Failed to generate random password")
+	}
+	rootPass := base64.StdEncoding.EncodeToString(rawRootPass)
+	return rootPass, nil
 }
 
 // DriverName returns the name of the driver
@@ -296,6 +308,15 @@ func (d *Driver) PreCreateCheck() error {
 	// RevNote could be sha256 of file so the file can be referenced instead of reuploaded.
 
 	client := d.getClient()
+
+	if d.RootPassword == "" {
+		log.Info("Generating a secure disposable linode-root-pass...")
+		var err error
+		d.RootPassword, err = createRandomRootPassword()
+		if err != nil {
+			return err
+		}
+	}
 
 	if d.StackScriptUser != "" {
 		/* N.B. username isn't on the list of filterable fields, however

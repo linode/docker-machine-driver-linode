@@ -51,7 +51,7 @@ docker-machine create -d linode --linode-token=<linode-token> --linode-root-pass
 | Argument | Env | Default | Description
 | --- | --- | --- | ---
 | `linode-token` | `LINODE_TOKEN` | None | **required** Linode APIv4 Token (see [here](https://developers.linode.com/api/v4#section/Personal-Access-Token))
-| `linode-root-pass` | `LINODE_ROOT_PASSWORD` | None | **required** The Linode Instance `root_pass` (password assigned to the `root` account)
+| `linode-root-pass` | `LINODE_ROOT_PASSWORD` | *generated* | The Linode Instance `root_pass` (password assigned to the `root` account)
 | `linode-label` | `LINODE_LABEL` | *generated* | The Linode Instance `label`, unless overridden this will match the docker-machine name.  This `label` must be unique on the account.
 | `linode-region` | `LINODE_REGION` | `us-east` | The Linode Instance `region` (see [here](https://api.linode.com/v4/regions))
 | `linode-instance-type` | `LINODE_INSTANCE_TYPE` | `g6-standard-4` | The Linode Instance `type` (see [here](https://api.linode.com/v4/linode/types))
@@ -68,13 +68,14 @@ docker-machine create -d linode --linode-token=<linode-token> --linode-root-pass
 ## Notes
 
 * When using the `linode/containerlinux` `linode-image`, the `linode-ssh-user` will default to `core`
+* A `linode-root-pass` will be generated if not provided.  This password will not be shown. Rely on `docker-machine ssh` or [Linode's Rescue features](https://www.linode.com/docs/quick-answers/linode-platform/reset-the-root-password-on-your-linode/) to access the node directly.
 
 ## Debugging
 
 Detailed run output will be emitted when using the LinodeGo `LINODE_DEBUG=1` option along with the `docker-machine` `--debug` option.
 
 ```bash
-LINODE_DEBUG=1 docker-machine --debug  create -d linode --linode-token=$LINODE_TOKEN --linode-root-pass=$ROOT_PASS machinename
+LINODE_DEBUG=1 docker-machine --debug  create -d linode --linode-token=$LINODE_TOKEN machinename
 ```
 
 ## Examples
@@ -83,9 +84,8 @@ LINODE_DEBUG=1 docker-machine --debug  create -d linode --linode-token=$LINODE_T
 
 ```bash
 LINODE_TOKEN=e332cf8e1a78427f1368a5a0a67946ad1e7c8e28e332cf8e1a78427f1368a5a0 # Should be 65 lowercase hex chars
-LINODE_ROOT_PASSWORD=$(openssl rand -base64 32); echo Password for root: $LINODE_ROOT_PASSWORD
 
-docker-machine create -d linode --linode-token=$LINODE_TOKEN --linode-root-pass=$LINODE_ROOT_PASSWORD linode
+docker-machine create -d linode --linode-token=$LINODE_TOKEN linode
 eval $(docker-machine env linode)
 docker run --rm -it debian bash
 ```

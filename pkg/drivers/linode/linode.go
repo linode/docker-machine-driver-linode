@@ -26,6 +26,7 @@ type Driver struct {
 	client *linodego.Client
 
 	APIToken         string
+	UserAgentPrefix  string
 	IPAddress        string
 	PrivateIPAddress string
 	CreatePrivateIP  bool
@@ -48,9 +49,12 @@ type Driver struct {
 	StackScriptData  map[string]string
 }
 
-const (
+var (
 	// VERSION represents the semver version of the package
-	VERSION               = "0.0.13"
+	VERSION = "devel"
+)
+
+const (
 	defaultSSHPort        = 22
 	defaultSSHUser        = "root"
 	defaultInstanceImage  = "linode/ubuntu18.04"
@@ -88,8 +92,14 @@ func (d *Driver) getClient() *linodego.Client {
 			},
 		}
 
+		ua := fmt.Sprintf("docker-machine-driver-%s/%s linodego/%s", d.DriverName(), VERSION, linodego.Version)
+
 		client := linodego.NewClient(oauth2Client)
-		client.SetUserAgent(fmt.Sprintf("docker-machine-driver-%s/v%s linodego/%s", d.DriverName(), VERSION, linodego.Version))
+		if len(d.UserAgentPrefix) > 0 {
+			ua = fmt.Sprintf("%s %s", d.UserAgentPrefix, ua)
+		}
+
+		client.SetUserAgent(ua)
 		client.SetDebug(true)
 		d.client = &client
 	}
@@ -201,6 +211,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Name:   "linode-create-private-ip",
 			Usage:  "Create private IP for the instance",
 		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_UA_PREFIX",
+			Name:   "linode-ua-prefix",
+			Usage:  fmt.Sprintf("Prefix the User-Agent in Linode API calls with some 'product/version'"),
+		},
 	}
 }
 
@@ -241,6 +256,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.SwapSize = flags.Int("linode-swap-size")
 	d.DockerPort = flags.Int("linode-docker-port")
 	d.CreatePrivateIP = flags.Bool("linode-create-private-ip")
+	d.UserAgentPrefix = flags.String("linode-ua-prefix")
 
 	d.SetSwarmConfigFromFlags(flags)
 

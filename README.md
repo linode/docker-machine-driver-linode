@@ -64,6 +64,11 @@ docker-machine create -d linode --linode-token=<linode-token> --linode-root-pass
 | `linode-stackscript` | `LINODE_STACKSCRIPT` | None | Specifies the Linode StackScript to use to create the instance, either by numeric ID, or using the form *username*/*label*.
 | `linode-stackscript-data` | `LINODE_STACKSCRIPT_DATA` | None | A JSON string specifying data that is passed (via UDF) to the selected StackScript.
 | `linode-create-private-ip` | `LINODE_CREATE_PRIVATE_IP` | None | A flag specifying to create private IP for the Linode instance.
+| `linode-ua-prefix` | `LINODE_UA_PREFIX` | None | Prefix the User-Agent in Linode API calls with some 'product/version'
+
+## Notes
+
+* When using the `linode/containerlinux` `linode-image`, the `linode-ssh-user` will default to `core`
 
 ## Debugging
 

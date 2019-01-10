@@ -12,7 +12,7 @@ endif
 
 .PHONY: build
 build: dep
-	go build -o $(OUT_DIR)/$(PROG)$(BIN_SUFFIX) ./
+	go build -ldflags "-X github.com/linode/docker-machine-driver-linode/pkg/drivers/linode.VERSION=`git describe --always`" -o $(OUT_DIR)/$(PROG)$(BIN_SUFFIX) ./
 
 .PHONY: dep
 dep:

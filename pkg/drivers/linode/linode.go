@@ -49,6 +49,8 @@ type Driver struct {
 	StackScriptUser  string
 	StackScriptLabel string
 	StackScriptData  map[string]string
+
+	Tags string
 }
 
 var (
@@ -226,6 +228,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Name:   "linode-ua-prefix",
 			Usage:  fmt.Sprintf("Prefix the User-Agent in Linode API calls with some 'product/version'"),
 		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_TAGS",
+			Name:   "linode-tags",
+			Usage:  fmt.Sprintf("A comma separated list of tags to apply to the the Linode resource"),
+		},
 	}
 }
 
@@ -267,6 +274,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.DockerPort = flags.Int("linode-docker-port")
 	d.CreatePrivateIP = flags.Bool("linode-create-private-ip")
 	d.UserAgentPrefix = flags.String("linode-ua-prefix")
+	d.Tags = flags.String("linode-tags")
 
 	d.SetSwarmConfigFromFlags(flags)
 
@@ -392,6 +400,10 @@ func (d *Driver) Create() error {
 		Image:           d.InstanceImage,
 		SwapSize:        &d.SwapSize,
 		PrivateIP:       d.CreatePrivateIP,
+	}
+
+	if d.Tags != "" {
+		createOpts.Tags = strings.Split(d.Tags, ",")
 	}
 
 	if d.StackScriptID != 0 {

@@ -52,6 +52,7 @@ docker-machine create -d linode --linode-token=<linode-token> --linode-root-pass
 | --- | --- | --- | ---
 | `linode-token` | `LINODE_TOKEN` | None | **required** Linode APIv4 Token (see [here](https://developers.linode.com/api/v4#section/Personal-Access-Token))
 | `linode-root-pass` | `LINODE_ROOT_PASSWORD` | *generated* | The Linode Instance `root_pass` (password assigned to the `root` account)
+| `linode-authorized-users` | `LINODE_AUTHORIZED_USERS` | None | Linode user accounts (separated by commas) whose Linode SSH keys will be permitted root access to the created node
 | `linode-label` | `LINODE_LABEL` | *generated* | The Linode Instance `label`, unless overridden this will match the docker-machine name.  This `label` must be unique on the account.
 | `linode-region` | `LINODE_REGION` | `us-east` | The Linode Instance `region` (see [here](https://api.linode.com/v4/regions))
 | `linode-instance-type` | `LINODE_INSTANCE_TYPE` | `g6-standard-4` | The Linode Instance `type` (see [here](https://api.linode.com/v4/linode/types))

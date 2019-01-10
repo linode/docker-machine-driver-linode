@@ -37,12 +37,13 @@ type Driver struct {
 	InstanceID    int
 	InstanceLabel string
 
-	Region        string
-	InstanceType  string
-	RootPassword  string
-	SSHPort       int
-	InstanceImage string
-	SwapSize      int
+	Region          string
+	InstanceType    string
+	RootPassword    string
+	AuthorizedUsers string
+	SSHPort         int
+	InstanceImage   string
+	SwapSize        int
 
 	StackScriptID    int
 	StackScriptUser  string
@@ -152,6 +153,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "Root Password",
 		},
 		mcnflag.StringFlag{
+			EnvVar: "LINODE_AUTHORIZED_USERS",
+			Name:   "linode-authorized-users",
+			Usage:  "Linode user accounts (seperated by commas) whose Linode SSH keys will be permitted root access to the created node",
+		},
+		mcnflag.StringFlag{
 			EnvVar: "LINODE_LABEL",
 			Name:   "linode-label",
 			Usage:  "Linode Instance Label",
@@ -251,6 +257,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.APIToken = flags.String("linode-token")
 	d.Region = flags.String("linode-region")
 	d.InstanceType = flags.String("linode-instance-type")
+	d.AuthorizedUsers = flags.String("linode-authorized-users")
 	d.RootPassword = flags.String("linode-root-pass")
 	d.SSHPort = flags.Int("linode-ssh-port")
 	d.SSHUser = flags.String("linode-ssh-user")
@@ -265,10 +272,6 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 	if d.APIToken == "" {
 		return fmt.Errorf("linode driver requires the --linode-token option")
-	}
-
-	if d.RootPassword == "" {
-		return fmt.Errorf("linode driver requires the --linode-root-pass option")
 	}
 
 	stackScript := flags.String("linode-stackscript")
@@ -380,14 +383,15 @@ func (d *Driver) Create() error {
 
 	// Create a linode
 	createOpts := linodego.InstanceCreateOptions{
-		Region:         d.Region,
-		Type:           d.InstanceType,
-		Label:          d.InstanceLabel,
-		RootPass:       d.RootPassword,
-		AuthorizedKeys: []string{strings.TrimSpace(publicKey)},
-		Image:          d.InstanceImage,
-		SwapSize:       &d.SwapSize,
-		PrivateIP:      d.CreatePrivateIP,
+		Region:          d.Region,
+		Type:            d.InstanceType,
+		Label:           d.InstanceLabel,
+		RootPass:        d.RootPassword,
+		AuthorizedUsers: strings.Split(d.AuthorizedUsers, ","),
+		AuthorizedKeys:  []string{strings.TrimSpace(publicKey)},
+		Image:           d.InstanceImage,
+		SwapSize:        &d.SwapSize,
+		PrivateIP:       d.CreatePrivateIP,
 	}
 
 	if d.StackScriptID != 0 {

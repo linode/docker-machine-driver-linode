@@ -10,7 +10,7 @@ builds:
       - GO111MODULE=on
     binary: docker-machine-driver-linode
     goos:
-      - windows
+#     - windows
       - darwin
       - linux
     goarch:

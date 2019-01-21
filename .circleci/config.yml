@@ -3,7 +3,6 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.11
-    working_directory: /go/src/github.com/linode/docker-machine-driver-linode
     steps:
       - checkout
       - run:
@@ -12,7 +11,6 @@ jobs:
   release:
     docker:
       - image: circleci/golang:1.11
-    working_directory: /go/src/github.com/linode/docker-machine-driver-linode
     steps:
       - checkout
       - run:

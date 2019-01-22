@@ -16,7 +16,7 @@ jobs:
       - run:
           name: Install tools
           command: |
-            go get github.com/goreleaser/goreleaser
+            GO111MODULE=off go get github.com/goreleaser/goreleaser
       - run:
           name: Run goreleaser
           command: goreleaser

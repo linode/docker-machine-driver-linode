@@ -391,15 +391,18 @@ func (d *Driver) Create() error {
 
 	// Create a linode
 	createOpts := linodego.InstanceCreateOptions{
-		Region:          d.Region,
-		Type:            d.InstanceType,
-		Label:           d.InstanceLabel,
-		RootPass:        d.RootPassword,
-		AuthorizedUsers: strings.Split(d.AuthorizedUsers, ","),
-		AuthorizedKeys:  []string{strings.TrimSpace(publicKey)},
-		Image:           d.InstanceImage,
-		SwapSize:        &d.SwapSize,
-		PrivateIP:       d.CreatePrivateIP,
+		Region:         d.Region,
+		Type:           d.InstanceType,
+		Label:          d.InstanceLabel,
+		RootPass:       d.RootPassword,
+		AuthorizedKeys: []string{strings.TrimSpace(publicKey)},
+		Image:          d.InstanceImage,
+		SwapSize:       &d.SwapSize,
+		PrivateIP:      d.CreatePrivateIP,
+	}
+
+	if len(d.AuthorizedUsers) > 0 {
+		createOpts.AuthorizedUsers = strings.Split(d.AuthorizedUsers, ",")
 	}
 
 	if d.Tags != "" {

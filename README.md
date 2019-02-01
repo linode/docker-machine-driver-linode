@@ -43,7 +43,7 @@ make install
 You will need a Linode APIv4 Personal Access Token.  Get one here: <https://developers.linode.com/api/v4#section/Personal-Access-Token>
 
 ```bash
-docker-machine create -d linode --linode-token=<linode-token> --linode-root-pass=<linode-root-pass> linode
+docker-machine create -d linode --linode-token=<linode-token> linode
 ```
 
 ### Options
@@ -70,7 +70,7 @@ docker-machine create -d linode --linode-token=<linode-token> --linode-root-pass
 ## Notes
 
 * When using the `linode/containerlinux` `linode-image`, the `linode-ssh-user` will default to `core`
-* A `linode-root-pass` will be generated if not provided.  This password will not be shown. Rely on `docker-machine ssh` or [Linode's Rescue features](https://www.linode.com/docs/quick-answers/linode-platform/reset-the-root-password-on-your-linode/) to access the node directly.
+* A `linode-root-pass` will be generated if not provided.  This password will not be shown. Rely on `docker-machine ssh`, `linode-authorized-users`, or [Linode's Rescue features](https://www.linode.com/docs/quick-answers/linode-platform/reset-the-root-password-on-your-linode/) to access the node directly.
 
 ## Debugging
 

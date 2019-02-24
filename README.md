@@ -72,6 +72,28 @@ docker-machine create -d linode --linode-token=<linode-token> linode
 * When using the `linode/containerlinux` `linode-image`, the `linode-ssh-user` will default to `core`
 * A `linode-root-pass` will be generated if not provided.  This password will not be shown. Rely on `docker-machine ssh`, `linode-authorized-users`, or [Linode's Rescue features](https://www.linode.com/docs/quick-answers/linode-platform/reset-the-root-password-on-your-linode/) to access the node directly.
 
+### Docker Volume Driver
+
+The [Docker Volume plugin for Linode Block Storage](https://github.com/linode/docker-volume-linode) can be installed while reusing the docker-machine properties:
+
+```sh
+MACHINE=my-docker-machine
+
+docker-machine create -d linode $MACHINE
+
+eval $(docker-machine env $MACHINE)
+
+# Region and Label are not needed. They would be inferred.  Included here for illustration purposes.
+docker plugin install --alias linode linode/docker-volume-linode:latest \
+  linode-token=$(docker-machine inspect $MACHINE -f "{{ .Driver.APIToken }}") \
+  linode-region=$(docker-machine inspect $MACHINE -f "{{ .Driver.Region }}") \
+  linode-label=$(docker-machine inspect $MACHINE -f "{{ .Driver.InstanceLabel }}")
+
+docker run -it --rm --mount volume-driver=linode,source=test-vol,destination=/test,volume-opt=size=25 alpine
+
+docker volume rm test-vol
+```
+
 ## Debugging
 
 Detailed run output will be emitted when using the LinodeGo `LINODE_DEBUG=1` option along with the `docker-machine` `--debug` option.
@@ -155,17 +177,20 @@ This script is provided for demonstrative use.  A production swarm environment w
         docker-machine ssh $worker_name "docker swarm join --token=${join_token} ${master_addr}"
     }
 
-    # create master node
-    create_node master01
-
-    # create worker node
-    create_node worker01
+    # create master and worker node
+    create_node swarm-master-01 & create_node swarm-worker-01
 
     # init swarm master
-    init_swarm_master master01
+    init_swarm_master swarm-master-01
 
     # init swarm worker
-    init_swarm_worker master01 worker01
+    init_swarm_worker swarm-master-01 swarm-worker-01
+
+    # install the docker-volume-linode plugin on each node
+    for NODE in swarm-master-01 swarm-worker-01; do
+      eval $(docker-machine env $NODE)
+      docker plugin install --alias linode linode/docker-volume-linode:latest linode-token=$LINODE_TOKEN
+    done
     ```
 
 1. After provisioning succeeds, check the Docker Swarm status.  The output should show active an swarm leader and worker.

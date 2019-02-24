@@ -423,6 +423,9 @@ func (d *Driver) Create() error {
 	d.InstanceID = linode.ID
 	d.InstanceLabel = linode.Label
 
+	// Don't persist alias region names
+	d.Region = linode.Region
+
 	for _, address := range linode.IPv4 {
 		if private := privateIP(*address); !private {
 			d.IPAddress = address.String()

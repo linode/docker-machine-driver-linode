@@ -388,6 +388,7 @@ func (d *Driver) Create() error {
 	}
 
 	client := d.getClient()
+	boolBooted := !d.CreatePrivateIP
 
 	// Create a linode
 	createOpts := linodego.InstanceCreateOptions{
@@ -399,6 +400,7 @@ func (d *Driver) Create() error {
 		Image:          d.InstanceImage,
 		SwapSize:       &d.SwapSize,
 		PrivateIP:      d.CreatePrivateIP,
+		Booted:         &boolBooted,
 	}
 
 	if len(d.AuthorizedUsers) > 0 {
@@ -451,6 +453,27 @@ func (d *Driver) Create() error {
 
 	if err != nil {
 		return err
+	}
+
+	if d.CreatePrivateIP {
+		log.Debugf("Enabling Network Helper for Private IP configuration...")
+
+		configs, err := client.ListInstanceConfigs(context.TODO(), linode.ID, nil)
+		if err != nil {
+			return err
+		}
+		if len(configs) == 0 {
+			return fmt.Errorf("Linode Config was not found for Linode %d", linode.ID)
+		}
+		updateOpts := configs[0].GetUpdateOptions()
+		updateOpts.Helpers.Network = true
+		if _, err := client.UpdateInstanceConfig(context.TODO(), linode.ID, configs[0].ID, updateOpts); err != nil {
+			return err
+		}
+
+		if err := client.BootInstance(context.TODO(), linode.ID, configs[0].ID); err != nil {
+			return err
+		}
 	}
 
 	log.Info("Waiting for Machine Running...")

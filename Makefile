@@ -27,7 +27,7 @@ test: dep
 .PHONY: check
 check:
 	gofmt -l -s -d pkg/
-	go tool vet pkg/
+	go vet
 
 .PHONY: clean
 clean:

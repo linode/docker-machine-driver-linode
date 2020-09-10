@@ -231,7 +231,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_TAGS",
 			Name:   "linode-tags",
-			Usage:  fmt.Sprintf("A comma separated list of tags to apply to the the Linode resource"),
+			Usage:  fmt.Sprintf("A comma separated list of tags to apply to the Linode resource"),
 		},
 	}
 }

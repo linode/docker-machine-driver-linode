@@ -95,7 +95,7 @@ func (d *Driver) getClient() *linodego.Client {
 			},
 		}
 
-		ua := fmt.Sprintf("docker-machine-driver-%s/%s linodego/%s", d.DriverName(), VERSION, linodego.Version)
+		ua := fmt.Sprintf("docker-machine-driver-%s/%s", d.DriverName(), VERSION)
 
 		client := linodego.NewClient(oauth2Client)
 		if len(d.UserAgentPrefix) > 0 {

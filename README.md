@@ -230,3 +230,7 @@ Join us at [#linodego](https://gophers.slack.com/messages/CAG93EB2S) on the [gop
 ## License
 
 [MIT License](LICENSE)
+
+## Contribution Guidelines
+
+Want to improve docker-machine-driver-linode? Please start [here](CONTRIBUTING.md).

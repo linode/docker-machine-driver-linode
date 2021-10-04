@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11
+      - image: cimg/go:1.17.1
     steps:
       - checkout
       - run:
@@ -10,7 +10,7 @@ jobs:
           command: make
   release:
     docker:
-      - image: circleci/golang:1.11
+      - image: cimg/go:1.17.1
     steps:
       - checkout
       - run:

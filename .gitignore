@@ -28,3 +28,5 @@ vendor
 docker-machine-driver-linode
 dist
 out
+
+dist/

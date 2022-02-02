@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/docker/machine v0.16.2
-	github.com/linode/linodego v1.2.1
+	github.com/linode/linodego v1.3.0
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 )

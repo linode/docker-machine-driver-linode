@@ -310,6 +310,10 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 		d.InstanceLabel = d.GetMachineName()
 	}
 
+	if len(d.InstanceLabel) > 64 {
+		d.InstanceLabel = d.InstanceLabel[0:64]
+	}
+
 	return nil
 }
 

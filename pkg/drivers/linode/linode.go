@@ -310,6 +310,11 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 		d.InstanceLabel = d.GetMachineName()
 	}
 
+	if len(d.InstanceLabel) > 64 {
+		d.InstanceLabel = d.InstanceLabel[:64]
+		log.Warnf("The name for this machine exceeds the 64 character Linode label limit. Truncating to %s", d.InstanceLabel)
+	}
+
 	return nil
 }
 

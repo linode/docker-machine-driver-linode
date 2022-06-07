@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/docker/machine v0.16.2
 	github.com/linode/linodego v1.2.1
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.7.2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 )
 
@@ -21,4 +21,5 @@ require (
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
 	google.golang.org/appengine v1.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

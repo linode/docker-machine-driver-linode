@@ -1,7 +1,9 @@
 package linode
 
 import (
+	"github.com/google/go-cmp/cmp"
 	"net"
+	"reflect"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -52,4 +54,18 @@ func TestIPInCIDR(t *testing.T) {
 	}
 	assert.True(t, ipInCIDR(tenOne, "10.0.0.0/8"), "10.0.0.1 is in 10.0.0.0/8")
 	assert.False(t, ipInCIDR(tenOne, "254.0.0.0/8"), "10.0.0.1 is not in 254.0.0.0/8")
+}
+
+func TestNormalizeInstanceLabel(t *testing.T) {
+	inputLabel := "_mycoollabel25';./__----=][[this,label,is,really[good]and]long[wow+that'scrazy[]what[a\\good!labelname."
+	expectedResult := "mycoollabel25._-thislabelisreallygoodandlongwowthatscrazywhatago"
+
+	result, err := normalizeInstanceLabel(inputLabel)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(result, expectedResult) {
+		t.Fatal(cmp.Diff(result, expectedResult))
+	}
 }

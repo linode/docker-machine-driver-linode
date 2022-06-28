@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -310,10 +311,12 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 		d.InstanceLabel = d.GetMachineName()
 	}
 
-	if len(d.InstanceLabel) > 64 {
-		d.InstanceLabel = d.InstanceLabel[:64]
-		log.Warnf("The name for this machine exceeds the 64 character Linode label limit. Truncating to %s", d.InstanceLabel)
+	newLabel, err := normalizeInstanceLabel(d.InstanceLabel)
+	if err != nil {
+		return fmt.Errorf("failed to normalize instance label: %s", err)
 	}
+
+	d.InstanceLabel = newLabel
 
 	return nil
 }
@@ -608,4 +611,69 @@ func ipInCIDR(ip net.IP, CIDR string) bool {
 		return false
 	}
 	return ipNet.Contains(ip)
+}
+
+const noLabelDuplicates = "._-"
+
+func normalizeInstanceLabel(label string) (string, error) {
+	noLabelDuplicatesMap := make(map[rune]bool)
+	for _, c := range noLabelDuplicates {
+		noLabelDuplicatesMap[c] = true
+	}
+
+	result := label
+
+	// Replace invalid characters
+	r, err := regexp.Compile("[^a-zA-Z\\d_.-]")
+	if err != nil {
+		return "", fmt.Errorf("failed to compile label normalization regex: %s", err)
+	}
+
+	replaced := r.ReplaceAllString(result, "")
+	if replaced != result {
+		log.Warnf("The name for this machine contains invalid characters. Normalizing to \"%s\"", replaced)
+	}
+
+	result = replaced
+
+	// Remove duplicates (no backrefs in regexp :( )
+	var lastChar rune
+	var resultBuilder strings.Builder
+	resultCharCount := len(result)
+
+	for i, c := range result {
+		currentLastChar := lastChar
+		lastChar = c
+
+		// If the rune is not a special char, keep it
+		if _, ok := noLabelDuplicatesMap[c]; !ok {
+			resultBuilder.WriteRune(c)
+			continue
+		}
+
+		// If the rune is a special character and is the first or last rune, skip it
+		if i == 0 || i == resultCharCount-1 {
+			continue
+		}
+
+		// If the char is not a repeat (e.g. --, __, ..), keep it
+		if currentLastChar != c {
+			resultBuilder.WriteRune(c)
+		}
+	}
+
+	newResult := resultBuilder.String()
+	if newResult != result {
+		log.Warnf("Removed duplicate special characters from Linode label: \"%s\" -> \"%s\"", result, newResult)
+	}
+
+	result = newResult
+
+	// Truncate length
+	if len(result) > 64 {
+		result = result[:64]
+		log.Warnf("The name for this machine exceeds the 64 character Linode label limit. Truncating to \"%s\"", result)
+	}
+
+	return result, nil
 }

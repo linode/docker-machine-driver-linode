@@ -26,3 +26,20 @@ jobs:
       
       - name: Test
         run: make test
+
+  old-go-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.16"
+
+      - run: go version
+
+      - name: Build binary
+        run: make
+      
+      - name: Test
+        run: make test

@@ -1,6 +1,6 @@
 module github.com/linode/docker-machine-driver-linode
 
-go 1.17
+go 1.18
 
 require (
 	github.com/docker/machine v0.16.2

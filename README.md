@@ -2,7 +2,6 @@
 
 [![GoDoc](https://godoc.org/github.com/linode/docker-machine-driver-linode?status.svg)](https://godoc.org/github.com/linode/docker-machine-driver-linode)
 [![Go Report Card](https://goreportcard.com/badge/github.com/linode/docker-machine-driver-linode)](https://goreportcard.com/report/github.com/linode/docker-machine-driver-linode)
-[![CircleCI](https://circleci.com/gh/linode/docker-machine-driver-linode.svg?style=svg)](https://circleci.com/gh/linode/docker-machine-driver-linode)
 [![GitHub release](https://img.shields.io/github/release/linode/docker-machine-driver-linode.svg)](https://github.com/linode/docker-machine-driver-linode/releases/)
 
 Linode Driver Plugin for docker-machine.

@@ -14,12 +14,13 @@ builds:
       - darwin
       - windows
 archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
+  - id: linode-docker-machine-archives
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Os }}-
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
 checksum:
   name_template: 'checksums.txt'
 snapshot:

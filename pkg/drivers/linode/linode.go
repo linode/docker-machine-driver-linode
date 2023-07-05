@@ -158,7 +158,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_AUTHORIZED_USERS",
 			Name:   "linode-authorized-users",
-			Usage:  "Linode user accounts (seperated by commas) whose Linode SSH keys will be permitted root access to the created node",
+			Usage:  "Linode user accounts (separated by commas) whose Linode SSH keys will be permitted root access to the created node",
 		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_LABEL",

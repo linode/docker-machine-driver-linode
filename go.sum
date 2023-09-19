@@ -16,8 +16,8 @@ github.com/golang/protobuf v1.5.3/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiu
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/linode/linodego v1.21.0 h1:VIco962oysKyNM7xkFGto+6ZwsepKbxeHDGBTLlqB4w=
-github.com/linode/linodego v1.21.0/go.mod h1:eDc/1GxYzNsNfDTC/8QKuMJNkdfN/ndYwldupf4ue1M=
+github.com/linode/linodego v1.22.0 h1:YWBs0MnTcPue4qI6N3l05lxJ+mLp9CM0F7nui8k4gi0=
+github.com/linode/linodego v1.22.0/go.mod h1:K5PlGeJzVo47S2v7bsDi20DbgTxdHT9dVLi6de2NerI=
 github.com/moby/term v0.5.0 h1:xt8Q1nalod/v7BqbG21f8mQPqH+xAaC9C3N3wfWbVP0=
 github.com/moby/term v0.5.0/go.mod h1:8FzsFHVUBGZdbDsJw/ot+X+d5HLUbvklYLJ9uGfcI3Y=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/docker/machine v0.16.2
 	github.com/google/go-cmp v0.6.0
-	github.com/linode/linodego v1.29.0
+	github.com/linode/linodego v1.30.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/oauth2 v0.18.0
 )

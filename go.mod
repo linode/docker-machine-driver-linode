@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/docker/machine v0.16.2
 	github.com/google/go-cmp v0.6.0
-	github.com/linode/linodego v1.33.0
+	github.com/linode/linodego v1.33.1
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/oauth2 v0.20.0
 )
@@ -21,7 +21,7 @@ require (
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 	gopkg.in/ini.v1 v1.66.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

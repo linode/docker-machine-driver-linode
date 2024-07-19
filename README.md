@@ -39,7 +39,7 @@ make install
 
 ## Run
 
-You will need a Linode APIv4 Personal Access Token.  Get one here: <https://developers.linode.com/api/v4#section/Personal-Access-Token>
+You will need a Linode APIv4 Personal Access Token.  Get one here: <https://www.linode.com/docs/products/tools/api/guides/manage-api-tokens/>
 
 ```bash
 docker-machine create -d linode --linode-token=<linode-token> linode
@@ -49,7 +49,7 @@ docker-machine create -d linode --linode-token=<linode-token> linode
 
 | Argument | Env | Default | Description
 | --- | --- | --- | ---
-| `linode-token` | `LINODE_TOKEN` | None | **required** Linode APIv4 Token (see [here](https://developers.linode.com/api/v4#section/Personal-Access-Token))
+| `linode-token` | `LINODE_TOKEN` | None | **required** Linode APIv4 Token (see [here](https://www.linode.com/docs/products/tools/api/guides/manage-api-tokens/))
 | `linode-root-pass` | `LINODE_ROOT_PASSWORD` | *generated* | The Linode Instance `root_pass` (password assigned to the `root` account)
 | `linode-authorized-users` | `LINODE_AUTHORIZED_USERS` | None | Linode user accounts (separated by commas) whose Linode SSH keys will be permitted root access to the created node
 | `linode-label` | `LINODE_LABEL` | *generated* | The Linode Instance `label`, unless overridden this will match the docker-machine name.  This `label` must be unique on the account.

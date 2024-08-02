@@ -54,10 +54,8 @@ type Driver struct {
 	Tags string
 }
 
-var (
-	// VERSION represents the semver version of the package
-	VERSION = "devel"
-)
+// VERSION represents the semver version of the package
+var VERSION = "devel"
 
 const (
 	defaultSSHPort       = 22
@@ -370,7 +368,6 @@ func (d *Driver) PreCreateCheck() error {
 		d.StackScriptID = script.ID
 	} else if d.StackScriptID != 0 {
 		script, err := client.GetStackscript(context.TODO(), d.StackScriptID)
-
 		if err != nil {
 			return fmt.Errorf("StackScript %d could not be used: %s", d.StackScriptID, err)
 		}

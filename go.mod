@@ -1,6 +1,12 @@
 module github.com/linode/docker-machine-driver-linode
 
-go 1.18
+go 1.22
+
+toolchain go1.22.2
+
+// This replacement is necessary to support Docker versions > v20.x.x
+// which provide critical security fixes.
+replace github.com/docker/machine => gitlab.com/gitlab-org/ci-cd/docker-machine v0.16.2-gitlab.27
 
 require (
 	github.com/docker/machine v0.16.2
@@ -11,11 +17,8 @@ require (
 )
 
 require (
-	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/docker v20.10.27+incompatible // indirect
 	github.com/go-resty/resty/v2 v2.13.1 // indirect
-	github.com/moby/term v0.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/net v0.27.0 // indirect

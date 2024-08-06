@@ -1,12 +1,12 @@
 package linode
 
 import (
-	"github.com/google/go-cmp/cmp"
 	"net"
 	"reflect"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
 

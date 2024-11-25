@@ -12,7 +12,7 @@ require (
 	github.com/docker/machine v0.16.2
 	github.com/google/go-cmp v0.6.0
 	github.com/linode/linodego v1.43.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	golang.org/x/oauth2 v0.24.0
 )
 

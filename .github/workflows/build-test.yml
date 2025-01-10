@@ -11,32 +11,16 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        go-version: ["stable", "oldstable"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "stable"
-
-      - run: go version
-
-      - name: Build binary
-        run: make
-      
-      - name: Test
-        run: make test
-
-  old-go-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "oldstable"
-
-      - run: go version
+          go-version: ${{ matrix.go-version }}
 
       - name: Build binary
         run: make

@@ -11,14 +11,14 @@ replace github.com/docker/machine => gitlab.com/gitlab-org/ci-cd/docker-machine 
 require (
 	github.com/docker/machine v0.16.2
 	github.com/google/go-cmp v0.6.0
-	github.com/linode/linodego v1.45.0
+	github.com/linode/linodego v1.46.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/oauth2 v0.25.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-resty/resty/v2 v2.16.2 // indirect
+	github.com/go-resty/resty/v2 v2.16.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect

@@ -1,8 +1,7 @@
 module github.com/linode/docker-machine-driver-linode
 
 go 1.22
-
-toolchain go1.22.2
+toolchain go1.23.6
 
 // This replacement is necessary to support Docker versions > v20.x.x
 // which provide critical security fixes.
@@ -13,7 +12,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/linode/linodego v1.47.0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/oauth2 v0.26.0
+	golang.org/x/oauth2 v0.27.0
 )
 
 require (

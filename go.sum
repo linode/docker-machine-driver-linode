@@ -15,8 +15,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-gitlab.com/gitlab-org/ci-cd/docker-machine v0.16.2-gitlab.27 h1:6XE5SIyDteS5BFR3EhlEt7UUBhkcf77loHYWaVS4BHM=
-gitlab.com/gitlab-org/ci-cd/docker-machine v0.16.2-gitlab.27/go.mod h1:WX9wJGY7+MC7527nUL2hvFOLNlowPeNjeiLtX5B6MnQ=
+gitlab.com/gitlab-org/ci-cd/docker-machine v0.16.2-gitlab.43 h1:3AOpTvIZHfvNnCEaPvmMTiX65gY3yYtpabcAZJUgsTE=
+gitlab.com/gitlab-org/ci-cd/docker-machine v0.16.2-gitlab.43/go.mod h1:WDpNHYkfs5yjw3iwSBFrFrsGZRGf2hPjkLVCbCvJvj8=
 golang.org/x/crypto v0.46.0 h1:cKRW/pmt1pKAfetfu+RCEvjvZkA9RimPbh7bhFjGVBU=
 golang.org/x/crypto v0.46.0/go.mod h1:Evb/oLKmMraqjZ2iQTwDwvCtJkczlDuTmdJXoZVzqU0=
 golang.org/x/net v0.48.0 h1:zyQRTTrjc33Lhh0fBgT/H3oZq9WuvRR5gPC70xpDiQU=

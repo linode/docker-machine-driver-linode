@@ -102,7 +102,6 @@ func (d *Driver) getClient() *linodego.Client {
 		}
 
 		client.SetUserAgent(ua)
-		client.SetDebug(true)
 		d.client = &client
 	}
 	return d.client

@@ -107,6 +107,11 @@ func (d *Driver) getClient() *linodego.Client {
 	return d.client
 }
 
+// SetClient sets the Linode API client for the driver
+func (d *Driver) SetClient(client *linodego.Client) {
+	d.client = client
+}
+
 func createRandomRootPassword() (string, error) {
 	rawRootPass := make([]byte, 50)
 	_, err := rand.Read(rawRootPass)

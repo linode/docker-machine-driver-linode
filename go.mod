@@ -1,12 +1,10 @@
 module github.com/linode/docker-machine-driver-linode
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.24.11
 
 // This replacement is necessary to support Docker versions > v20.x.x
 // which provide critical security fixes.
-replace github.com/docker/machine => gitlab.com/gitlab-org/ci-cd/docker-machine v0.16.2-gitlab.27
+replace github.com/docker/machine => gitlab.com/gitlab-org/ci-cd/docker-machine v0.16.2-gitlab.43
 
 require (
 	github.com/docker/machine v0.16.2

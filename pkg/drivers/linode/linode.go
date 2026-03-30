@@ -51,7 +51,9 @@ type Driver struct {
 	StackScriptLabel string
 	StackScriptData  map[string]string
 
-	Tags string
+	// UserData contains base64-encoded cloud-init user data for the Linode Metadata service.
+	UserData string
+	Tags     string
 }
 
 // VERSION represents the semver version of the package
@@ -221,6 +223,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "A JSON string specifying data for the selected StackScript",
 			Value:  "",
 		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_USER_DATA",
+			Name:   "linode-user-data",
+			Usage:  "Cloud-init user data for the Linode Metadata service (inline or @path to file)",
+		},
 		mcnflag.BoolFlag{
 			EnvVar: "LINODE_CREATE_PRIVATE_IP",
 			Name:   "linode-create-private-ip",
@@ -279,6 +286,16 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.UserAgentPrefix = flags.String("linode-ua-prefix")
 	d.Tags = flags.String("linode-tags")
 
+	userData := flags.String("linode-user-data")
+	if userData != "" {
+		encodedUserData, err := encodeUserData(userData)
+		if err != nil {
+			return err
+		}
+
+		d.UserData = encodedUserData
+	}
+
 	d.SetSwarmConfigFromFlags(flags)
 
 	if d.APIToken == "" {
@@ -321,6 +338,28 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.InstanceLabel = newLabel
 
 	return nil
+}
+
+func encodeUserData(userData string) (string, error) {
+	if userData == "" {
+		return "", nil
+	}
+
+	if strings.HasPrefix(userData, "@") {
+		path := strings.TrimSpace(strings.TrimPrefix(userData, "@"))
+		if path == "" {
+			return "", fmt.Errorf("--linode-user-data requires a file path after '@'")
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("failed to read user data from --linode-user-data file %q: %w", path, err)
+		}
+
+		userData = string(content)
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(userData)), nil
 }
 
 // PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation
@@ -424,6 +463,12 @@ func (d *Driver) Create() error {
 		createOpts.StackScriptID = d.StackScriptID
 		createOpts.StackScriptData = d.StackScriptData
 		log.Infof("Using StackScript %d: %s/%s", d.StackScriptID, d.StackScriptUser, d.StackScriptLabel)
+	}
+
+	if d.UserData != "" {
+		createOpts.Metadata = &linodego.InstanceMetadataOptions{
+			UserData: d.UserData,
+		}
 	}
 
 	linode, err := client.CreateInstance(context.TODO(), createOpts)

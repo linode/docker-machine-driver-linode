@@ -28,12 +28,17 @@ type Driver struct {
 	*drivers.BaseDriver
 	client *linodego.Client
 
-	APIToken         string
-	UserAgentPrefix  string
-	IPAddress        string
-	PrivateIPAddress string
-	CreatePrivateIP  bool
-	DockerPort       int
+	APIToken                  string
+	UserAgentPrefix           string
+	IPAddress                 string
+	PrivateIPAddress          string
+	CreatePrivateIP           bool
+	UseInterfaces             bool
+	VPCSubnetID               int
+	VPCPrivateIP              string
+	VPCInterfaceFirewallID    int
+	PublicInterfaceFirewallID int
+	DockerPort                int
 
 	InstanceID    int
 	InstanceLabel string
@@ -120,6 +125,19 @@ func createRandomRootPassword() (string, error) {
 	}
 	rootPass := base64.StdEncoding.EncodeToString(rawRootPass)
 	return rootPass, nil
+}
+
+// FirewallID is a **int in linodego so callers can distinguish between
+// omitting the field entirely and explicitly sending a value.
+func firewallIDPtr(id int) **int {
+	if id == 0 {
+		return nil
+	}
+
+	value := id
+	valuePtr := &value
+
+	return &valuePtr
 }
 
 // DriverName returns the name of the driver
@@ -226,6 +244,31 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Name:   "linode-create-private-ip",
 			Usage:  "Create private IP for the instance",
 		},
+		mcnflag.BoolFlag{
+			EnvVar: "LINODE_USE_INTERFACES",
+			Name:   "linode-use-interfaces",
+			Usage:  "Enable Linode interface/VPC networking (opt-in, keeps legacy defaults otherwise)",
+		},
+		mcnflag.IntFlag{
+			EnvVar: "LINODE_VPC_SUBNET_ID",
+			Name:   "linode-vpc-subnet-id",
+			Usage:  "VPC subnet ID to attach when using interface/VPC networking",
+		},
+		mcnflag.StringFlag{
+			EnvVar: "LINODE_VPC_PRIVATE_IP",
+			Name:   "linode-vpc-private-ip",
+			Usage:  "Optional IPv4 address to request on the VPC interface (requires --linode-use-interfaces)",
+		},
+		mcnflag.IntFlag{
+			EnvVar: "LINODE_PUBLIC_INTERFACE_FIREWALL_ID",
+			Name:   "linode-public-interface-firewall-id",
+			Usage:  "Firewall ID to attach to the public interface when using interface/VPC networking",
+		},
+		mcnflag.IntFlag{
+			EnvVar: "LINODE_VPC_INTERFACE_FIREWALL_ID",
+			Name:   "linode-vpc-interface-firewall-id",
+			Usage:  "Firewall ID to attach to the VPC interface when using interface/VPC networking",
+		},
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_UA_PREFIX",
 			Name:   "linode-ua-prefix",
@@ -276,6 +319,11 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.SwapSize = flags.Int("linode-swap-size")
 	d.DockerPort = flags.Int("linode-docker-port")
 	d.CreatePrivateIP = flags.Bool("linode-create-private-ip")
+	d.UseInterfaces = flags.Bool("linode-use-interfaces")
+	d.VPCSubnetID = flags.Int("linode-vpc-subnet-id")
+	d.VPCPrivateIP = strings.TrimSpace(flags.String("linode-vpc-private-ip"))
+	d.VPCInterfaceFirewallID = flags.Int("linode-vpc-interface-firewall-id")
+	d.PublicInterfaceFirewallID = flags.Int("linode-public-interface-firewall-id")
 	d.UserAgentPrefix = flags.String("linode-ua-prefix")
 	d.Tags = flags.String("linode-tags")
 
@@ -319,6 +367,34 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	}
 
 	d.InstanceLabel = newLabel
+
+	if d.PublicInterfaceFirewallID < 0 {
+		return fmt.Errorf("invalid value for --linode-public-interface-firewall-id: must be zero or positive")
+	}
+	if d.VPCInterfaceFirewallID < 0 {
+		return fmt.Errorf("invalid value for --linode-vpc-interface-firewall-id: must be zero or positive")
+	}
+
+	if d.UseInterfaces && d.CreatePrivateIP {
+		return fmt.Errorf("cannot combine --linode-use-interfaces with --linode-create-private-ip; choose one networking mode")
+	}
+
+	if d.UseInterfaces {
+		if d.VPCSubnetID == 0 {
+			return fmt.Errorf("linode interface networking requires --linode-vpc-subnet-id")
+		}
+
+		if d.VPCPrivateIP != "" {
+			parsed := net.ParseIP(d.VPCPrivateIP)
+			if parsed == nil || parsed.To4() == nil {
+				return fmt.Errorf("linode VPC private IP must be a valid IPv4 address")
+			}
+		}
+	} else {
+		if d.VPCSubnetID != 0 || d.VPCPrivateIP != "" || d.PublicInterfaceFirewallID != 0 || d.VPCInterfaceFirewallID != 0 {
+			return fmt.Errorf("VPC/interface options require --linode-use-interfaces to be set")
+		}
+	}
 
 	return nil
 }
@@ -391,6 +467,10 @@ func (d *Driver) Create() error {
 		log.Infof("Using SSH port %d", d.SSHPort)
 	}
 
+	if d.UseInterfaces {
+		log.Infof("Using interface/VPC networking (subnet %d)", d.VPCSubnetID)
+	}
+
 	publicKey, err := d.createSSHKey()
 	if err != nil {
 		return err
@@ -426,6 +506,38 @@ func (d *Driver) Create() error {
 		log.Infof("Using StackScript %d: %s/%s", d.StackScriptID, d.StackScriptUser, d.StackScriptLabel)
 	}
 
+	if d.UseInterfaces {
+		defaultRoute := true
+		vpcInterface := linodego.LinodeInterfaceCreateOptions{
+			VPC: &linodego.VPCInterfaceCreateOptions{
+				SubnetID: d.VPCSubnetID,
+			},
+		}
+		vpcInterface.FirewallID = firewallIDPtr(d.VPCInterfaceFirewallID)
+
+		if d.VPCPrivateIP != "" {
+			address := d.VPCPrivateIP
+			primary := true
+			vpcInterface.VPC.IPv4 = &linodego.VPCInterfaceIPv4CreateOptions{
+				Addresses: &[]linodego.VPCInterfaceIPv4AddressCreateOptions{
+					{
+						Address: &address,
+						Primary: &primary,
+					},
+				},
+			}
+		}
+
+		createOpts.InterfaceGeneration = linodego.GenerationLinode
+		createOpts.PrivateIP = false
+		publicInterface := linodego.LinodeInterfaceCreateOptions{
+			DefaultRoute: &linodego.InterfaceDefaultRoute{IPv4: &defaultRoute},
+			Public:       &linodego.PublicInterfaceCreateOptions{},
+			FirewallID:   firewallIDPtr(d.PublicInterfaceFirewallID),
+		}
+		createOpts.LinodeInterfaces = []linodego.LinodeInterfaceCreateOptions{publicInterface, vpcInterface}
+	}
+
 	linode, err := client.CreateInstance(context.TODO(), createOpts)
 	if err != nil {
 		return err
@@ -437,32 +549,58 @@ func (d *Driver) Create() error {
 	// Don't persist alias region names
 	d.Region = linode.Region
 
-	for _, address := range linode.IPv4 {
-		if private := privateIP(*address); !private {
-			d.IPAddress = address.String()
-		} else if d.CreatePrivateIP {
-			d.PrivateIPAddress = address.String()
+	if d.UseInterfaces {
+		ips, err := client.GetInstanceIPAddresses(context.TODO(), linode.ID)
+		if err != nil {
+			return err
+		}
+
+		if ips == nil || ips.IPv4 == nil {
+			return errors.New("Linode IP information is not available")
+		}
+
+		d.IPAddress = firstInstanceIP(ips.IPv4.Public)
+		if d.IPAddress == "" {
+			d.IPAddress = firstInstanceIP(ips.IPv4.Shared)
+		}
+		if d.IPAddress == "" {
+			d.IPAddress = firstInstanceIP(ips.IPv4.Reserved)
+		}
+
+		d.PrivateIPAddress = firstVPCIPv4(ips.IPv4.VPC)
+
+		if d.IPAddress == "" {
+			return errors.New("Linode public IP address was not found")
+		}
+
+		if d.PrivateIPAddress == "" {
+			return fmt.Errorf("Linode VPC private IP address not found for subnet %d", d.VPCSubnetID)
+		}
+	} else {
+		for _, address := range linode.IPv4 {
+			if private := privateIP(*address); !private {
+				d.IPAddress = address.String()
+			} else if d.CreatePrivateIP {
+				d.PrivateIPAddress = address.String()
+			}
+		}
+
+		if d.IPAddress == "" {
+			return errors.New("Linode IP Address is not found")
+		}
+
+		if d.CreatePrivateIP && d.PrivateIPAddress == "" {
+			return errors.New("Linode Private IP Address is not found")
 		}
 	}
 
-	if d.IPAddress == "" {
-		return errors.New("Linode IP Address is not found")
-	}
-
-	if d.CreatePrivateIP && d.PrivateIPAddress == "" {
-		return errors.New("Linode Private IP Address is not found")
-	}
-
-	log.Debugf("Created Linode Instance %s (%d), IP address %q, Private IP address %q",
+	log.Debugf("Created Linode Instance %s (%d), IP address %q, Private IP address %q (interfaces enabled: %t)",
 		d.InstanceLabel,
 		d.InstanceID,
 		d.IPAddress,
 		d.PrivateIPAddress,
+		d.UseInterfaces,
 	)
-
-	if err != nil {
-		return err
-	}
 
 	if d.CreatePrivateIP {
 		log.Debugf("Enabling Network Helper for Private IP configuration...")
@@ -612,6 +750,32 @@ func ipInCIDR(ip net.IP, CIDR string) bool {
 		return false
 	}
 	return ipNet.Contains(ip)
+}
+
+func firstInstanceIP(addresses []*linodego.InstanceIP) string {
+	for _, address := range addresses {
+		if address == nil {
+			continue
+		}
+		if address.Address != "" {
+			return address.Address
+		}
+	}
+
+	return ""
+}
+
+func firstVPCIPv4(addresses []*linodego.VPCIP) string {
+	for _, address := range addresses {
+		if address == nil {
+			continue
+		}
+		if address.Address != nil && *address.Address != "" {
+			return *address.Address
+		}
+	}
+
+	return ""
 }
 
 const noLabelDuplicates = "._-"

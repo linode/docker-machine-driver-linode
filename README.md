@@ -62,6 +62,7 @@ docker-machine create -d linode --linode-token=<linode-token> linode
 | `linode-swap-size` | `LINODE_SWAP_SIZE` | `512` | The amount of swap space provisioned on the Linode Instance
 | `linode-stackscript` | `LINODE_STACKSCRIPT` | None | Specifies the Linode StackScript to use to create the instance, either by numeric ID, or using the form *username*/*label*.
 | `linode-stackscript-data` | `LINODE_STACKSCRIPT_DATA` | None | A JSON string specifying data that is passed (via UDF) to the selected StackScript.
+| `linode-user-data` | `LINODE_USER_DATA` | None | Cloud-init user data passed to the Linode Metadata service; use inline content or prefix with `@` to read from a file. Content is base64-encoded automatically.
 | `linode-create-private-ip` | `LINODE_CREATE_PRIVATE_IP` | None | A flag specifying to create private IP for the Linode instance.
 | `linode-tags` | `LINODE_TAGS` | None | A comma separated list of tags to apply to the Linode resource
 | `linode-ua-prefix` | `LINODE_UA_PREFIX` | None | Prefix the User-Agent in Linode API calls with some 'product/version'

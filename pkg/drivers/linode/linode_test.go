@@ -1,7 +1,10 @@
 package linode
 
 import (
+	"encoding/base64"
 	"net"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -25,6 +28,86 @@ func TestSetConfigFromFlags(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Empty(t, checkFlags.InvalidFlags)
+}
+
+func TestSetConfigFromFlagsUserDataInline(t *testing.T) {
+	driver := NewDriver("", "")
+
+	userData := "#cloud-config\npackages:\n - htop\n"
+	checkFlags := &drivers.CheckDriverOptions{
+		FlagsValues: map[string]interface{}{
+			"linode-token":     "PROJECT",
+			"linode-root-pass": "ROOTPASS",
+			"linode-user-data": userData,
+		},
+		CreateFlags: driver.GetCreateFlags(),
+	}
+
+	err := driver.SetConfigFromFlags(checkFlags)
+
+	assert.NoError(t, err)
+	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte(userData)), driver.UserData)
+}
+
+func TestSetConfigFromFlagsUserDataFile(t *testing.T) {
+	driver := NewDriver("", "")
+
+	dir := t.TempDir()
+	userDataPath := filepath.Join(dir, "user-data.yaml")
+	userData := "#cloud-config\npackages:\n  - curl\n"
+	if err := os.WriteFile(userDataPath, []byte(userData), 0o600); err != nil {
+		t.Fatalf("failed to write user data fixture: %s", err)
+	}
+
+	checkFlags := &drivers.CheckDriverOptions{
+		FlagsValues: map[string]interface{}{
+			"linode-token":     "PROJECT",
+			"linode-root-pass": "ROOTPASS",
+			"linode-user-data": "@" + userDataPath,
+		},
+		CreateFlags: driver.GetCreateFlags(),
+	}
+
+	err := driver.SetConfigFromFlags(checkFlags)
+
+	assert.NoError(t, err)
+	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte(userData)), driver.UserData)
+}
+
+func TestSetConfigFromFlagsUserDataMissingFile(t *testing.T) {
+	driver := NewDriver("", "")
+
+	checkFlags := &drivers.CheckDriverOptions{
+		FlagsValues: map[string]interface{}{
+			"linode-token":     "PROJECT",
+			"linode-root-pass": "ROOTPASS",
+			"linode-user-data": "@/does/not/exist",
+		},
+		CreateFlags: driver.GetCreateFlags(),
+	}
+
+	err := driver.SetConfigFromFlags(checkFlags)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--linode-user-data")
+}
+
+func TestSetConfigFromFlagsUserDataEmptyPath(t *testing.T) {
+	driver := NewDriver("", "")
+
+	checkFlags := &drivers.CheckDriverOptions{
+		FlagsValues: map[string]interface{}{
+			"linode-token":     "PROJECT",
+			"linode-root-pass": "ROOTPASS",
+			"linode-user-data": "@",
+		},
+		CreateFlags: driver.GetCreateFlags(),
+	}
+
+	err := driver.SetConfigFromFlags(checkFlags)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--linode-user-data")
 }
 
 func TestPrivateIP(t *testing.T) {

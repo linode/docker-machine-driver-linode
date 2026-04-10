@@ -30,25 +30,6 @@ func TestSetConfigFromFlags(t *testing.T) {
 	assert.Empty(t, checkFlags.InvalidFlags)
 }
 
-func TestSetConfigFromFlagsUserDataInline(t *testing.T) {
-	driver := NewDriver("", "")
-
-	userData := "#cloud-config\npackages:\n - htop\n"
-	checkFlags := &drivers.CheckDriverOptions{
-		FlagsValues: map[string]interface{}{
-			"linode-token":     "PROJECT",
-			"linode-root-pass": "ROOTPASS",
-			"linode-user-data": userData,
-		},
-		CreateFlags: driver.GetCreateFlags(),
-	}
-
-	err := driver.SetConfigFromFlags(checkFlags)
-
-	assert.NoError(t, err)
-	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte(userData)), driver.UserData)
-}
-
 func TestSetConfigFromFlagsUserDataFile(t *testing.T) {
 	driver := NewDriver("", "")
 
@@ -63,7 +44,7 @@ func TestSetConfigFromFlagsUserDataFile(t *testing.T) {
 		FlagsValues: map[string]interface{}{
 			"linode-token":     "PROJECT",
 			"linode-root-pass": "ROOTPASS",
-			"linode-user-data": "@" + userDataPath,
+			"linode-user-data": userDataPath,
 		},
 		CreateFlags: driver.GetCreateFlags(),
 	}
@@ -81,7 +62,7 @@ func TestSetConfigFromFlagsUserDataMissingFile(t *testing.T) {
 		FlagsValues: map[string]interface{}{
 			"linode-token":     "PROJECT",
 			"linode-root-pass": "ROOTPASS",
-			"linode-user-data": "@/does/not/exist",
+			"linode-user-data": "/does/not/exist",
 		},
 		CreateFlags: driver.GetCreateFlags(),
 	}
@@ -99,7 +80,7 @@ func TestSetConfigFromFlagsUserDataEmptyPath(t *testing.T) {
 		FlagsValues: map[string]interface{}{
 			"linode-token":     "PROJECT",
 			"linode-root-pass": "ROOTPASS",
-			"linode-user-data": "@",
+			"linode-user-data": "   ",
 		},
 		CreateFlags: driver.GetCreateFlags(),
 	}

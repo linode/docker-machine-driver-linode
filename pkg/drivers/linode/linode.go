@@ -226,7 +226,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 		mcnflag.StringFlag{
 			EnvVar: "LINODE_USER_DATA",
 			Name:   "linode-user-data",
-			Usage:  "Cloud-init user data for the Linode Metadata service (inline or @path to file)",
+			Usage:  "Path to a cloud-init user-data file for the Linode Metadata service",
 		},
 		mcnflag.BoolFlag{
 			EnvVar: "LINODE_CREATE_PRIVATE_IP",
@@ -345,21 +345,17 @@ func encodeUserData(userData string) (string, error) {
 		return "", nil
 	}
 
-	if strings.HasPrefix(userData, "@") {
-		path := strings.TrimSpace(strings.TrimPrefix(userData, "@"))
-		if path == "" {
-			return "", fmt.Errorf("--linode-user-data requires a file path after '@'")
-		}
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return "", fmt.Errorf("failed to read user data from --linode-user-data file %q: %w", path, err)
-		}
-
-		userData = string(content)
+	path := strings.TrimSpace(userData)
+	if path == "" {
+		return "", fmt.Errorf("--linode-user-data requires a file path")
 	}
 
-	return base64.StdEncoding.EncodeToString([]byte(userData)), nil
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to read user data from --linode-user-data file %q: %w", path, err)
+	}
+
+	return base64.StdEncoding.EncodeToString(content), nil
 }
 
 // PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation

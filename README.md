@@ -63,8 +63,18 @@ docker-machine create -d linode --linode-token=<linode-token> linode
 | `linode-stackscript` | `LINODE_STACKSCRIPT` | None | Specifies the Linode StackScript to use to create the instance, either by numeric ID, or using the form *username*/*label*.
 | `linode-stackscript-data` | `LINODE_STACKSCRIPT_DATA` | None | A JSON string specifying data that is passed (via UDF) to the selected StackScript.
 | `linode-create-private-ip` | `LINODE_CREATE_PRIVATE_IP` | None | A flag specifying to create private IP for the Linode instance.
+| `linode-use-interfaces` | `LINODE_USE_INTERFACES` | None | Opt-in to Linode's interface/VPC networking stack (requires `linode-vpc-subnet-id`; conflicts with `linode-create-private-ip`).
+| `linode-vpc-subnet-id` | `LINODE_VPC_SUBNET_ID` | None | VPC subnet ID to attach when using interface networking.
+| `linode-vpc-private-ip` | `LINODE_VPC_PRIVATE_IP` | None | Optional IPv4 address to request on the VPC interface (requires `linode-use-interfaces`).
+| `linode-vpc-interface-firewall-id` | `LINODE_VPC_INTERFACE_FIREWALL_ID` | None | Firewall ID to attach to the VPC interface when using the interface/VPC networking stack.
+| `linode-public-interface-firewall-id` | `LINODE_PUBLIC_INTERFACE_FIREWALL_ID` | None | Firewall ID to attach to the public interface when using the interface/VPC networking stack.
 | `linode-tags` | `LINODE_TAGS` | None | A comma separated list of tags to apply to the Linode resource
 | `linode-ua-prefix` | `LINODE_UA_PREFIX` | None | Prefix the User-Agent in Linode API calls with some 'product/version'
+
+## Networking Modes
+
+- **Legacy (default):** uses public networking and optionally `--linode-create-private-ip` to attach a private address.
+- **Interface/VPC (opt-in):** enable with `--linode-use-interfaces` plus `--linode-vpc-subnet-id`. If your account does not define default interface firewalls, set `--linode-public-interface-firewall-id` and/or `--linode-vpc-interface-firewall-id` to avoid API errors. This mode is incompatible with `--linode-create-private-ip`.
 
 ## Notes
 
@@ -125,6 +135,24 @@ Are you sure? (y/n): y
 (default) Removing linode: 8753395
 Successfully removed linode
 ```
+
+### Interface/VPC Networking Example
+
+Use Linode's newer interface generation to attach a VPC subnet while keeping the public interface for provisioning traffic.
+
+```bash
+docker-machine create \
+  -d linode \
+  --linode-token=$LINODE_TOKEN \
+  --linode-use-interfaces \
+  --linode-vpc-subnet-id=67890 \
+  --linode-vpc-private-ip=10.0.0.25 \
+  linode-vpc
+```
+
+If your account does not have default interface firewalls configured, include `--linode-public-interface-firewall-id=<firewall-id>` and/or `--linode-vpc-interface-firewall-id=<firewall-id>` to satisfy the Linode API requirement.
+
+The `--linode-use-interfaces` flag is incompatible with `--linode-create-private-ip` to keep networking behavior deterministic. Omit `--linode-vpc-private-ip` to request an automatically assigned address from the subnet. Without `--linode-use-interfaces`, legacy networking remains the default.
 
 ### Provisioning Docker Swarm
 

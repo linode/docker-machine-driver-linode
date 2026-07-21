@@ -500,7 +500,7 @@ func (d *Driver) Create() error {
 	waitContext, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 	if _, err := client.WaitForInstanceStatus(waitContext, d.InstanceID, linodego.InstanceRunning); err != nil {
-		return fmt.Errorf("wait for machine running failed: %s", err)
+		return fmt.Errorf("wait for machine running failed: %w", err)
 	}
 
 	return nil

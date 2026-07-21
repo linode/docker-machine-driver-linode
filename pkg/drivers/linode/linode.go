@@ -582,7 +582,7 @@ func (d *Driver) Remove() error {
 	}
 	log.Infof("Removing linode: %d", d.InstanceID)
 	if err := client.DeleteInstance(context.TODO(), d.InstanceID); err != nil {
-		if apiErr, ok := err.(*linodego.Error); ok && apiErr.Code == 404 {
+		if linodego.IsNotFound(err) {
 			log.Debug("Linode was already removed")
 			return nil
 		}

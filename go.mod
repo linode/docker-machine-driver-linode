@@ -9,7 +9,7 @@ replace github.com/docker/machine => gitlab.com/gitlab-org/ci-cd/docker-machine 
 require (
 	github.com/docker/machine v0.16.2
 	github.com/google/go-cmp v0.7.0
-	github.com/linode/linodego/v2 v2.5.0
+	github.com/linode/linodego/v2 v2.6.0
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/oauth2 v0.37.0
 )
@@ -17,10 +17,10 @@ require (
 require (
 	github.com/google/go-querystring v1.2.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	gopkg.in/ini.v1 v1.67.3 // indirect
 )

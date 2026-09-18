@@ -9,7 +9,7 @@ replace github.com/docker/machine => gitlab.com/gitlab-org/ci-cd/docker-machine 
 require (
 	github.com/docker/machine v0.16.2
 	github.com/google/go-cmp v0.7.0
-	github.com/linode/linodego/v2 v2.6.0
+	github.com/linode/linodego/v2 v2.7.0
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/oauth2 v0.37.0
 )
